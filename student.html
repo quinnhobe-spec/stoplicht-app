@@ -8,131 +8,52 @@
 body{font-family:Arial,Helvetica,sans-serif;padding:20px;max-width:1000px;margin:auto;position:relative;}
 h2{margin-bottom:20px;}
 .buttons button{display:block;width:100%;padding:14px;margin:8px 0;font-size:18px;border:none;border-radius:8px;color:white;cursor:pointer}
-.aanhetwerk{background:#5cb85c} /* groen */
-.vraag{background:#d9534f}       /* rood */
-
-/* Container voor klasstatussen */
-.status-list{
-    margin-top:18px;
-    padding:0;
-    list-style:none;
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-}
-
-/* Individueel blokje */
-.status-item{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    width:18%; /* ongeveer 5 per rij */
-    min-width:120px;
-    height:120px;
-    border-radius:8px;
-    background:#f7f7f7;
-    cursor:default;
-}
-.dot{
-    width:30px;
-    height:30px;
-    border-radius:50%;
-    margin-bottom:8px;
-}
+.aanhetwerk{background:#5cb85c}
+.vraag{background:#d9534f}
+.status-list{margin-top:18px;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:10px;}
+.status-item{display:flex;flex-direction:column;align-items:center;justify-content:center;width:18%;min-width:120px;height:120px;border-radius:8px;background:#f7f7f7;}
+.dot{width:30px;height:30px;border-radius:50%;margin-bottom:8px;}
 #msg{margin-top:12px;text-align:center;}
-
-/* Overlay voor login */
-#loginOverlay{
-    position:fixed;
-    top:0; left:0;
-    width:100%; height:100%;
-    background:rgba(0,0,0,0.85);
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    color:white;
-    z-index:9999;
-    overflow-y:auto; /* scroll als er veel namen zijn */
-    padding:20px;
-    box-sizing:border-box;
-}
-#loginOverlay h2{margin-bottom:20px;color:white;text-align:center;}
-
-/* Container met alle namen in overlay */
-#loginNames{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    justify-content:center;
-    max-width:900px;
-}
-
-/* Individuele naam knop in overlay */
-.login-name{
-    background:#007bff;
-    padding:12px 20px;
-    border-radius:8px;
-    cursor:pointer;
-    font-size:18px;
-    flex: 1 1 calc(20% - 10px); /* 5 per rij, rekening houdend met gap */
-    text-align:center;
-    min-width:120px;
-}
+#loginOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;z-index:9999;overflow-y:auto;padding:20px;box-sizing:border-box;}
+#loginOverlay h2{margin-bottom:20px;text-align:center;}
+#loginNames{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:900px;}
+.login-name{background:#007bff;padding:12px 20px;border-radius:8px;cursor:pointer;font-size:18px;flex:1 1 calc(20% - 10px);text-align:center;min-width:120px;}
 .login-name:hover{background:#0056b3;}
-
-/* Uitloggen knop */
-#logoutBtn{
-    display:none;
-    margin-top:10px;
-    padding:10px 16px;
-    border:none;
-    border-radius:6px;
-    background:#ff6600;
-    color:white;
-    cursor:pointer;
-    font-size:16px;
-}
+#logoutBtn{display:none;margin-top:10px;padding:10px 16px;border:none;border-radius:6px;background:#ff6600;color:white;cursor:pointer;font-size:16px;}
 #logoutBtn:hover{background:#cc5200;}
 </style>
 </head>
 <body>
 <h2>Stoplicht - leerling</h2>
 
-<!-- Overlay -->
 <div id="loginOverlay">
     <h2>Kies je naam</h2>
     <div id="loginNames"></div>
 </div>
 
-<div class="buttons" role="group" aria-label="Stoplicht knoppen">
+<div class="buttons" role="group">
     <button class="aanhetwerk" data-status="aanhetwerk">🟩 Aan het werk / Geen vragen</button>
     <button class="vraag" data-status="vraag">🟥 Ik heb een vraag</button>
 </div>
 
 <button id="logoutBtn">Uitloggen</button>
-
-<p id="msg" style="color:green" aria-live="polite"></p>
+<p id="msg" style="color:green"></p>
 
 <h3>Huidige status klas</h3>
-<ul id="statusList" class="status-list" aria-live="polite"></ul>
+<ul id="statusList" class="status-list"></ul>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyC8wWU5VUq6YLNzxBObFuVN8WYegKzZTPI",
   authDomain: "stoplichtblokje.firebaseapp.com",
   databaseURL: "https://stoplichtblokje-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "stoplichtblokje",
-  storageBucket: "stoplichtblokje.firebasestorage.app",
+  storageBucket: "stoplichtblokje.firebasedatabase.app",
   messagingSenderId: "1019644227104",
-  appId: "1:1019644227104:web:833b07ad778a8df5171645",
-  measurementId: "G-3MG6YRBVD2"
+  appId: "1:1019644227104:web:833b07ad778a8df5171645"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const statusList = document.getElementById('statusList');
@@ -142,24 +63,24 @@ const logoutBtn = document.getElementById('logoutBtn');
 let currentStudentId = null;
 let currentStudentName = null;
 
-// Laad studenten en toon overlay altijd
+// Load overlay
 function loadStudents(){
     loginOverlay.style.display='flex';
-    logoutBtn.style.display = 'none';
-    db.ref('students').once('value').then(snapshot=>{
-        const data = snapshot.val() || {};
-        loginNamesDiv.innerHTML = '';
+    logoutBtn.style.display='none';
+    db.ref('students').once('value').then(snap=>{
+        const data = snap.val()||{};
+        loginNamesDiv.innerHTML='';
         Object.keys(data).forEach(k=>{
-            const nameDiv = document.createElement('div');
-            nameDiv.className='login-name';
-            nameDiv.textContent=data[k].name;
-            nameDiv.addEventListener('click', ()=>{
+            const div = document.createElement('div');
+            div.className='login-name';
+            div.textContent = data[k].name;
+            div.addEventListener('click',()=>{
                 currentStudentId = k;
                 currentStudentName = data[k].name;
                 loginOverlay.style.display='none';
                 logoutBtn.style.display='inline-block';
             });
-            loginNamesDiv.appendChild(nameDiv);
+            loginNamesDiv.appendChild(div);
         });
     });
 }
@@ -167,67 +88,53 @@ function loadStudents(){
 // Update status
 function updateStatus(status){
     if(!currentStudentId) return;
-    const updates = {status: status};
-    if(status==='vraag'){
-        updates.vraagTijd = Date.now();
-    } else {
-        updates.vraagTijd = null;
-    }
+    const updates = {status:status};
+    updates.vraagTijd = status==='vraag'?Date.now():null;
     db.ref('students/'+currentStudentId).update({...updates,name:currentStudentName});
     const msg = document.getElementById('msg');
-    msg.textContent = 'Status opgeslagen: '+status;
+    msg.textContent='Status opgeslagen: '+status;
     setTimeout(()=>{ msg.textContent=''; },2000);
 }
 
 // Buttons
 document.querySelectorAll('.buttons button').forEach(b=>{
-    b.addEventListener('click', ()=>{
-        updateStatus(b.dataset.status);
-    });
+    b.addEventListener('click',()=>updateStatus(b.dataset.status));
 });
 
 // Render klasstatussen
-function renderStatuses(snapshot){
-    const data = snapshot.val() || {};
+db.ref('students').on('value',snap=>{
+    const data = snap.val()||{};
     const items = Object.keys(data).map(k=>{
-        return {id:k, name:data[k].name, status:data[k].status||'aanhetwerk', vraagTijd:data[k].vraagTijd||null};
+        return {id:k,name:data[k].name,status:data[k].status||'aanhetwerk',vraagTijd:data[k].vraagTijd||null};
     });
-
-    // Sorteer: eerst 'vraag' op volgorde van eerste klik
     items.sort((a,b)=>{
         if(a.status==='vraag' && b.status!=='vraag') return -1;
         if(a.status!=='vraag' && b.status==='vraag') return 1;
         if(a.status==='vraag' && b.status==='vraag') return (a.vraagTijd||0)-(b.vraagTijd||0);
         return 0;
     });
-
     statusList.innerHTML='';
     items.forEach(it=>{
-        const li = document.createElement('li');
+        const li=document.createElement('li');
         li.className='status-item';
-        const dot = document.createElement('div');
-        dot.className='dot';
-        if(it.status==='aanhetwerk') dot.style.background='#5cb85c';
-        else if(it.status==='vraag') dot.style.background='#d9534f';
-        else dot.style.background='#bbb';
-        const name = document.createElement('div');
-        name.textContent=it.name;
+        const dot=document.createElement('div'); dot.className='dot';
+        dot.style.background = it.status==='aanhetwerk'? '#5cb85c':'#d9534f';
         li.appendChild(dot);
+        const name=document.createElement('div'); name.textContent=it.name;
         li.appendChild(name);
         statusList.appendChild(li);
     });
-}
+});
 
-// Uitloggen knop
-logoutBtn.addEventListener('click', ()=>{
+// Logout
+logoutBtn.addEventListener('click',()=>{
     currentStudentId = null;
     currentStudentName = null;
     loginOverlay.style.display='flex';
     logoutBtn.style.display='none';
 });
 
-// Start realtime listener en load overlay
-db.ref('students').on('value', renderStatuses);
+// Init
 loadStudents();
 </script>
 </body>
