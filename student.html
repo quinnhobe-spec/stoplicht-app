@@ -32,7 +32,6 @@ body{font-family:Arial,Helvetica,sans-serif;padding:20px;max-width:720px;margin:
 <h3>Huidige status klas</h3>
 <ul id="statusList" class="status-list" aria-live="polite"></ul>
 
-<!-- Firebase libs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -61,7 +60,7 @@ klas.forEach(n=>{
     sel.appendChild(opt);
 });
 
-// Status update functie
+// Functie voor status update
 function updateStatus(id,name,status){
     db.ref('students/'+id).set({
         name: name,
@@ -71,11 +70,11 @@ function updateStatus(id,name,status){
         const msg = document.getElementById('msg');
         msg.textContent = err ? 'Fout bij opslaan' : 'Status opgeslagen: '+status;
         msg.style.color = err ? 'crimson' : 'green';
-        setTimeout(()=>{ msg.textContent = ''; }, 2500);
+        setTimeout(()=>{ msg.textContent=''; }, 2500);
     });
 }
 
-// Knoppen
+// Buttons
 document.querySelectorAll('.buttons button').forEach(b=>{
     b.addEventListener('click', ()=>{
         if(!sel.value) return;
@@ -93,14 +92,14 @@ function renderStatuses(snapshot){
     const keys = [...klas.map(n=>n.toLowerCase()), ...Object.keys(data).filter(k=>!klas.map(n=>n.toLowerCase()).includes(k))];
     statusList.innerHTML = '';
     keys.forEach(k=>{
-        const s = data[k] || {name: k, status: 'onbekend', timestamp: null};
+        const s = data[k] || {name:k, status:'onbekend', timestamp:null};
         const li = document.createElement('li');
         li.className = 'status-item';
         const dot = document.createElement('div');
         dot.className = 'dot';
-        if(s.status === 'aanhetwerk') dot.style.background = '#5cb85c';
-        else if(s.status === 'vraag') dot.style.background = '#d9534f';
-        else dot.style.background = '#bbb';
+        if(s.status==='aanhetwerk') dot.style.background='#5cb85c';
+        else if(s.status==='vraag') dot.style.background='#d9534f';
+        else dot.style.background='#bbb';
         const name = document.createElement('div');
         name.textContent = s.name || k;
         const meta = document.createElement('div');
@@ -113,14 +112,14 @@ function renderStatuses(snapshot){
     });
 }
 
-// Tijd weergeven
+// Tijd
 function timeAgo(ts){
     if(!ts) return '';
     const diff = Math.floor((Date.now() - ts)/1000);
-    if(diff < 5) return 'nu';
-    if(diff < 60) return diff + 's';
-    if(diff < 3600) return Math.floor(diff/60) + 'm';
-    if(diff < 86400) return Math.floor(diff/3600) + 'u';
+    if(diff<5) return 'nu';
+    if(diff<60) return diff+'s';
+    if(diff<3600) return Math.floor(diff/60)+'m';
+    if(diff<86400) return Math.floor(diff/3600)+'u';
     return new Date(ts).toLocaleString();
 }
 
@@ -128,7 +127,3 @@ db.ref('students').on('value', renderStatuses);
 </script>
 </body>
 </html>
-
-
-
-
