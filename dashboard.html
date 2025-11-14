@@ -19,13 +19,13 @@ h2 {margin:0;}
 .traffic-circle.active.orange {background:#f0ad4e;}
 .traffic-circle.active.green {background:#5cb85c;}
 .timerDisplay {font-size:24px; text-align:center; margin-top:10px;}
-#groupList,#groupList li,#chosenName {display:none;}
 button {cursor:pointer; border:none; border-radius:6px; padding:6px 10px; margin-top:4px;}
 button:hover {opacity:0.9;}
 .clock-container {display:flex; align-items:center; gap:20px; justify-content:flex-end;}
 #clockDigital {font-size:18px; font-weight:bold;}
 #clockAnalog {width:80px; height:80px; border:2px solid #333; border-radius:50%; position:relative;}
 #clockAnalog .hand {width:50%; height:2px; background:#333; position:absolute; top:50%; left:50%; transform-origin:0% 50%;}
+#groupList,#chosenName,#groupSection,#nameSection,#timerSection,#startDagSection {display:none;}
 </style>
 </head>
 <body>
@@ -119,61 +119,6 @@ function updateClock(){
 setInterval(updateClock,1000);
 updateClock();
 
-// Start van de dag
-const startDagSection=document.getElementById('startDagSection');
-document.getElementById('startDagToggle').addEventListener('click',()=>startDagSection.style.display=startDagSection.style.display==='none'?'block':'none');
-const startDagMsg=document.getElementById('startDagMsg');
-db.ref('class/startOfDayMessage').on('value',snap=>{ startDagMsg.textContent = snap.val()?.message || ''; });
-document.getElementById('startDagBtn').addEventListener('click',()=>{ db.ref('class/startOfDayMessage').set({message:document.getElementById('startDagInput').value}); });
-
-// Verkeerslicht docent
-const circles=document.querySelectorAll('.traffic-circle');
-circles.forEach(c=>{
-    c.addEventListener('click',()=>{
-        db.ref('class/trafficLight').set(c.dataset.color);
-    });
-});
-db.ref('class/trafficLight').on('value',snap=>{
-    const color=snap.val();
-    circles.forEach(c=>c.classList.remove('active','red','orange','green'));
-    if(color) document.querySelector(`.traffic-circle.${color}`).classList.add('active',color);
-});
-
-// Timer
-let timerInterval=null;
-const timerDisplay=document.getElementById('timerDisplay');
-document.getElementById('timerToggle').addEventListener('click',()=>document.getElementById('timerSection').style.display=document.getElementById('timerSection').style.display==='none'?'block':'none');
-
-document.getElementById('startTimerBtn').addEventListener('click',()=>{
-    const minutes=parseInt(document.getElementById('timerMinutes').value)||5;
-    const endTime=Date.now()+minutes*60000;
-    db.ref('class/timer').set({endTime,running:true});
-});
-document.getElementById('stopTimerBtn').addEventListener('click',()=>{ db.ref('class/timer').update({running:false}); });
-document.getElementById('deleteTimerBtn').addEventListener('click',()=>{ db.ref('class/timer').remove(); });
-
-// Stoplicht leerlingen
-const statusList=document.getElementById('statusList');
-db.ref('students').on('value',snap=>{
-    const data=snap.val()||{};
-    const items=Object.keys(data).map(k=>({id:k,name:data[k].name,status:data[k].status||'aanhetwerk',statusTime:data[k].statusTime||null}));
-    items.sort((a,b)=>{
-        if(a.status==='vraag' && b.status!=='vraag') return -1;
-        if(a.status!=='vraag' && b.status==='vraag') return 1;
-        if(a.status==='vraag' && b.status==='vraag') return (a.statusTime||0)-(b.statusTime||0);
-        return 0;
-    });
-    statusList.innerHTML='';
-    items.forEach(it=>{
-        const li=document.createElement('li'); li.className='status-item';
-        const dot=document.createElement('div'); dot.className='dot';
-        dot.style.background=it.status==='aanhetwerk'?'#5cb85c':'#d9534f';
-        li.appendChild(dot);
-        const name=document.createElement('div'); name.textContent=it.name;
-        statusList.appendChild(li);
-        li.appendChild(name);
-    });
-});
-</script>
-</body>
-</html>
+// Toggle sections
+document.getElementById('startDagToggle').addEventListener('click',()=>{toggleSection('startDagSection');});
+document.getElem
