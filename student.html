@@ -2,28 +2,59 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Stoplicht - leerling</title>
+<title>Leerling Dashboard</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-body {font-family: Arial,sans-serif; padding:20px; max-width:720px; margin:auto; background:#f5f5f5;}
+body {font-family:Arial,sans-serif; background:#f5f5f5; margin:20px; max-width:720px;}
 h2 {text-align:center;}
-.buttons {display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:20px;}
-.buttons button {flex:1 1 120px; padding:14px; font-size:18px; border:none; border-radius:8px; color:white; cursor:pointer;}
+#loginOverlay {position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; flex-wrap:wrap; justify-content:center; align-items:center; padding:20px; z-index:10;}
+#loginOverlay button {flex:1 1 100px; margin:10px; padding:12px; border-radius:8px; font-size:16px; cursor:pointer; color:white; background:#5cb85c; border:none;}
+.buttons {display:flex; gap:10px; justify-content:center; margin-top:20px; flex-wrap:wrap;}
+.buttons button {flex:1 1 140px; padding:14px; font-size:18px; border-radius:8px; border:none; color:white; cursor:pointer;}
 .red {background:#d9534f;}
 .green {background:#5cb85c;}
-.overlay {position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; justify-content:center; align-items:center; flex-wrap:wrap; padding:20px; z-index:10;}
-.overlay button {flex:1 1 100px; margin:10px;}
+#startDagMsg {font-weight:bold; margin:10px 0; background:#fff; padding:10px; border-radius:8px;}
+#statusList {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; list-style:none; padding:0; margin-top:20px;}
+.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; color:#fff;}
+.status-item .dot {width:30px; height:30px; border-radius:50%; margin-bottom:8px;}
+#trafficLightStudent {width:40px; height:100px; margin:20px auto; display:flex; flex-direction:column; justify-content:space-around; align-items:center;}
+.traffic-circle {width:25px; height:25px; border-radius:50%; background:#ccc;}
+.traffic-circle.active.red {background:#d9534f;}
+.traffic-circle.active.orange {background:#f0ad4e;}
+.traffic-circle.active.green {background:#5cb85c;}
+.clock-container {display:flex; align-items:center; gap:20px; justify-content:flex-end;}
+#clockDigital {font-size:18px; font-weight:bold;}
+#clockAnalog {width:80px; height:80px; border:2px solid #333; border-radius:50%; position:relative;}
+#clockAnalog .hand {width:50%; height:2px; background:#333; position:absolute; top:50%; left:50%; transform-origin:0% 50%;}
 #logoutBtn {margin-top:20px; padding:10px 16px; background:#ccc; color:#000; border-radius:6px; cursor:pointer;}
 </style>
 </head>
 <body>
-<h2>Stoplicht Leerling</h2>
+<h2>Leerling Dashboard</h2>
 
-<div id="loginOverlay" class="overlay"></div>
+<div id="startDagMsg"></div>
+<div class="clock-container">
+    <span id="clockDigital"></span>
+    <div id="clockAnalog">
+        <div class="hand" id="hourHand"></div>
+        <div class="hand" id="minuteHand"></div>
+        <div class="hand" id="secondHand"></div>
+    </div>
+</div>
 
-<div class="buttons" role="group" aria-label="Stoplicht knoppen">
+<div id="loginOverlay"></div>
+
+<div class="buttons" role="group">
     <button class="green" data-status="aanhetwerk">🟩 Aan het werk / Geen vragen</button>
     <button class="red" data-status="vraag">🟥 Ik heb een vraag</button>
+</div>
+
+<ul id="statusList"></ul>
+
+<div id="trafficLightStudent">
+    <div class="traffic-circle red"></div>
+    <div class="traffic-circle orange"></div>
+    <div class="traffic-circle green"></div>
 </div>
 
 <button id="logoutBtn">Uitloggen</button>
@@ -32,66 +63,4 @@ h2 {text-align:center;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyC8wWU5VUq6YLNzxBObFuVN8WYegKzZTPI",
-  authDomain: "stoplichtblokje.firebaseapp.com",
-  databaseURL: "https://stoplichtblokje-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "stoplichtblokje",
-  storageBucket: "stoplichtblokje.firebasedestorage.app",
-  messagingSenderId: "1019644227104",
-  appId: "1:1019644227104:web:833b07ad778a8df5171645"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let currentUser=null;
-const overlay=document.getElementById('loginOverlay');
-const buttons=document.querySelectorAll('.buttons button');
-const logoutBtn=document.getElementById('logoutBtn');
-
-function loadStudents(){
-    overlay.innerHTML='';
-    db.ref('students').once('value').then(snap=>{
-        const data=snap.val()||{};
-        // Check start of day message
-        db.ref('class/startOfDayMessage').once('value').then(msgSnap=>{
-            const msgData = msgSnap.val();
-            if(msgData && msgData.message){
-                const p=document.createElement('p');
-                p.style.color='#fff';
-                p.style.fontSize='18px';
-                p.style.width='100%';
-                p.style.textAlign='center';
-                p.textContent=msgData.message;
-                overlay.appendChild(p);
-            }
-            Object.keys(data).forEach(k=>{
-                const btn=document.createElement('button');
-                btn.textContent=data[k].name;
-                btn.addEventListener('click',()=>{
-                    currentUser=k;
-                    overlay.style.display='none';
-                });
-                overlay.appendChild(btn);
-            });
-            overlay.style.display='flex';
-        });
-    });
-}
-
-buttons.forEach(b=>{
-    b.addEventListener('click', ()=>{
-        if(!currentUser) return;
-        const status=b.dataset.status;
-        db.ref('students/'+currentUser).update({status:status});
-    });
-});
-
-logoutBtn.addEventListener('click', ()=>{
-    currentUser=null;
-    overlay.style.display='flex';
-});
-
-loadStudents();
-</script>
-</body>
-</html>
+  api
