@@ -9,7 +9,7 @@ body {font-family: Arial, sans-serif; background:#f5f5f5; margin:20px;}
 h2 {margin-bottom:10px; display:inline-block;}
 .card {background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-bottom:20px;}
 .statusListGrid {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; list-style:none; padding:0; margin-top:10px;}
-.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; color:#000;}
+.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; color:#000; cursor:pointer;}
 .status-item .dot {width:30px; height:30px; border-radius:50%; margin-bottom:8px;}
 .buttons {display:flex; gap:10px; margin-top:10px;}
 .buttons button {flex:1; padding:12px; border:none; border-radius:8px; font-size:16px; cursor:pointer; color:#fff;}
@@ -117,24 +117,34 @@ db.ref('class/startOfDayMessage').on('value',snap=>{
     startDagDisplay.textContent=snap.val()?.message || '';
 });
 
-// Stoplicht leerlingen
+// Stoplicht leerlingen realtime
 const statusList=document.getElementById('statusList');
-db.ref('students').on('value',snap=>{
-    const data=snap.val()||{};
+function renderStudents(data){
+    const studentsArr = Object.keys(data).map(k=>({id:k, ...data[k]}));
+    // Sorteer eerst op status "vraag" bovenaan en dan de rest
+    studentsArr.sort((a,b)=>{
+        if(a.status==='vraag' && b.status!=='vraag') return -1;
+        if(a.status!=='vraag' && b.status==='vraag') return 1;
+        return a.statusTime - b.statusTime; // eerder vraag boven
+    });
     statusList.innerHTML='';
-    Object.keys(data).forEach(k=>{
+    studentsArr.forEach(s=>{
         const li=document.createElement('li'); li.className='status-item';
         const dot=document.createElement('div'); dot.className='dot';
-        dot.style.background = data[k].status==='aanhetwerk'?'#5cb85c':'#d9534f';
+        dot.style.background = s.status==='aanhetwerk'?'#5cb85c':'#d9534f';
         li.appendChild(dot);
-        const name=document.createElement('div'); name.textContent=data[k].name;
+        const name=document.createElement('div'); name.textContent=s.name;
         li.appendChild(name);
-        li.addEventListener('click',()=>{ 
-            const newStatus=data[k].status==='aanhetwerk'?'vraag':'aanhetwerk';
-            db.ref('students/'+k).update({status:newStatus,statusTime:Date.now()});
+        // docent kan op leerling klikken om status te wijzigen
+        li.addEventListener('click',()=>{
+            const newStatus=s.status==='aanhetwerk'?'vraag':'aanhetwerk';
+            db.ref('students/'+s.id).update({status:newStatus,statusTime:Date.now()});
         });
         statusList.appendChild(li);
     });
+}
+db.ref('students').on('value',snap=>{
+    renderStudents(snap.val()||{});
 });
 
 // Timer
@@ -161,7 +171,7 @@ db.ref('class/timer').on('value',snap=>{
     } else timerDisplay.textContent='';
 });
 
-// Namenkiezer
+// Collapsible
 const collapsibles=document.querySelectorAll('.collapsible');
 collapsibles.forEach(c=>{
     c.addEventListener('click',()=>{ 
@@ -169,6 +179,8 @@ collapsibles.forEach(c=>{
         content.style.display=content.style.display==='block'?'none':'block';
     });
 });
+
+// Namenkiezer
 document.getElementById('namePickerBtn').addEventListener('click',()=>{
     db.ref('students').once('value').then(snap=>{
         const data=snap.val()||{};
@@ -176,7 +188,6 @@ document.getElementById('namePickerBtn').addEventListener('click',()=>{
         if(keys.length===0) return;
         const pick=keys[Math.floor(Math.random()*keys.length)];
         document.getElementById('chosenName').textContent=data[pick].name;
-        document.getElementById('chosenName').style.display='block';
     });
 });
 
@@ -192,6 +203,7 @@ document.getElementById('makeGroups').addEventListener('click',()=>{
         keys.forEach((k,idx)=>{
             groups[idx%numGroups].push(data[k].name);
         });
+        // zorg dat niemand alleen zit
         groups.forEach((g,i)=>{
             if(g.length===1 && groups.length>1){
                 groups[i-1].push(g.pop());
@@ -199,7 +211,11 @@ document.getElementById('makeGroups').addEventListener('click',()=>{
         });
         db.ref('class/groups').set(groups);
         const ul=document.getElementById('groupList'); ul.innerHTML='';
-        groups.forEach((g,i)=>{ const li=document.createElement('li'); li.textContent=`Groep ${i+1}: ${g.join(', ')}`; ul.appendChild(li);});
+        groups.forEach((g,i)=>{
+            const li=document.createElement('li');
+            li.textContent=`Groep ${i+1}: ${g.join(', ')}`;
+            ul.appendChild(li);
+        });
     });
 });
 </script>
