@@ -63,4 +63,100 @@ h2 {text-align:center;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 const firebaseConfig = {
-  api
+  apiKey: "AIzaSyC8wWU5VUq6YLNzxBObFuVN8WYegKzZTPI",
+  authDomain: "stoplichtblokje.firebaseapp.com",
+  databaseURL: "https://stoplichtblokje-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "stoplichtblokje",
+  storageBucket: "stoplichtblokje.firebasedestorage.app",
+  messagingSenderId: "1019644227104",
+  appId: "1:1019644227104:web:833b07ad778a8df5171645"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+let currentUser=null;
+
+// Clock
+function updateClock(){
+    const now=new Date();
+    document.getElementById('clockDigital').textContent=now.toLocaleTimeString();
+    document.getElementById('hourHand').style.transform=`rotate(${30*now.getHours()+now.getMinutes()/2}deg)`;
+    document.getElementById('minuteHand').style.transform=`rotate(${6*now.getMinutes()}deg)`;
+    document.getElementById('secondHand').style.transform=`rotate(${6*now.getSeconds()}deg)`;
+}
+setInterval(updateClock,1000);
+updateClock();
+
+// Load students and show overlay
+function loadOverlay(){
+    const overlay=document.getElementById('loginOverlay');
+    overlay.innerHTML='';
+    db.ref('students').once('value').then(snap=>{
+        const data=snap.val()||{};
+        const keys=Object.keys(data);
+        keys.forEach(k=>{
+            const btn=document.createElement('button');
+            btn.textContent=data[k].name;
+            btn.addEventListener('click',()=>{currentUser=k; overlay.style.display='none';});
+            overlay.appendChild(btn);
+        });
+    });
+    overlay.style.display='flex';
+}
+loadOverlay();
+
+// Logout button
+document.getElementById('logoutBtn').addEventListener('click',()=>{
+    currentUser=null;
+    loadOverlay();
+});
+
+// Buttons
+document.querySelectorAll('.buttons button').forEach(b=>{
+    b.addEventListener('click',()=>{
+        if(!currentUser) return;
+        const status=b.dataset.status;
+        db.ref('students/'+currentUser).update({status, vraagTijd: status==='vraag'?Date.now():null});
+    });
+});
+
+// Stoplicht klas realtime
+const trafficCircles=document.querySelectorAll('#trafficLightStudent .traffic-circle');
+db.ref('class/trafficLight').on('value',snap=>{
+    const color=snap.val();
+    trafficCircles.forEach(c=>c.classList.remove('active','red','orange','green'));
+    if(color) document.querySelector(`#trafficLightStudent .${color}`).classList.add('active',color);
+});
+
+// Start van de dag
+const startDagDiv=document.getElementById('startDagMsg');
+db.ref('class/startOfDayMessage').on('value',snap=>{
+    const data=snap.val();
+    startDagDiv.textContent=data?.message || '';
+});
+
+// Stoplicht leerlingen
+const statusList=document.getElementById('statusList');
+db.ref('students').on('value',snap=>{
+    const data=snap.val()||{};
+    const items=Object.keys(data).map(k=>({id:k,name:data[k].name,status:data[k].status||'aanhetwerk',vraagTijd:data[k].vraagTijd||null}));
+    items.sort((a,b)=>{
+        if(a.status==='vraag' && b.status!=='vraag') return -1;
+        if(a.status!=='vraag' && b.status==='vraag') return 1;
+        if(a.status==='vraag' && b.status==='vraag') return (a.vraagTijd||0)-(b.vraagTijd||0);
+        return 0;
+    });
+    statusList.innerHTML='';
+    items.forEach(it=>{
+        const li=document.createElement('li');
+        li.className='status-item';
+        const dot=document.createElement('div'); dot.className='dot';
+        dot.style.background=it.status==='aanhetwerk'?'#5cb85c':'#d9534f';
+        li.appendChild(dot);
+        const name=document.createElement('div'); name.textContent=it.name;
+        li.appendChild(name);
+        statusList.appendChild(li);
+    });
+});
+</script>
+</body>
+</html>
