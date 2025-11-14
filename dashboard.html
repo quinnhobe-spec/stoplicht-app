@@ -6,10 +6,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 body {font-family: Arial, sans-serif; background:#f5f5f5; margin:20px;}
-h2 {margin-bottom:10px;}
+h2 {margin-bottom:10px; display:inline-block;}
 .card {background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-bottom:20px;}
 .statusListGrid {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; list-style:none; padding:0; margin-top:10px;}
-.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; cursor:pointer; color:#000;}
+.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; color:#000;}
 .status-item .dot {width:30px; height:30px; border-radius:50%; margin-bottom:8px;}
 .buttons {display:flex; gap:10px; margin-top:10px;}
 .buttons button {flex:1; padding:12px; border:none; border-radius:8px; font-size:16px; cursor:pointer; color:#fff;}
@@ -17,9 +17,9 @@ h2 {margin-bottom:10px;}
 .red {background:#d9534f;}
 .timerControls {display:flex; gap:10px; margin-top:10px;}
 .timerControls button {flex:1; padding:8px; border:none; border-radius:6px; cursor:pointer; color:#fff;}
-.clock-container {display:flex; align-items:center; gap:20px; justify-content:flex-end;}
+.clock-container {position:absolute; top:20px; right:20px; display:flex; align-items:center; gap:15px;}
 #clockDigital {font-size:18px; font-weight:bold;}
-#clockAnalog {width:80px; height:80px; border:2px solid #333; border-radius:50%; position:relative;}
+#clockAnalog {width:60px; height:60px; border:2px solid #333; border-radius:50%; position:relative;}
 #clockAnalog .hand {width:50%; height:2px; background:#333; position:absolute; top:50%; left:50%; transform-origin:0% 50%;}
 .collapsible {cursor:pointer; user-select:none;}
 .collapsibleContent {display:none; margin-top:10px;}
@@ -29,6 +29,15 @@ input[type=number] {width:50px;}
 <body>
 
 <h2>Leerkracht Dashboard</h2>
+
+<div class="clock-container">
+    <span id="clockDigital"></span>
+    <div id="clockAnalog">
+        <div class="hand" id="hourHand"></div>
+        <div class="hand" id="minuteHand"></div>
+        <div class="hand" id="secondHand"></div>
+    </div>
+</div>
 
 <div class="card">
 <h3>Start van de dag / opdrachten</h3>
@@ -70,18 +79,10 @@ input[type=number] {width:50px;}
 </div>
 </div>
 
-<div class="clock-container">
-    <span id="clockDigital"></span>
-    <div id="clockAnalog">
-        <div class="hand" id="hourHand"></div>
-        <div class="hand" id="minuteHand"></div>
-        <div class="hand" id="secondHand"></div>
-    </div>
-</div>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyC8wWU5VUq6YLNzxBObFuVN8WYegKzZTPI",
   authDomain: "stoplichtblokje.firebaseapp.com",
@@ -124,7 +125,7 @@ db.ref('students').on('value',snap=>{
     Object.keys(data).forEach(k=>{
         const li=document.createElement('li'); li.className='status-item';
         const dot=document.createElement('div'); dot.className='dot';
-        dot.style.background=data[k].status==='aanhetwerk'?'#5cb85c':'#d9534f';
+        dot.style.background = data[k].status==='aanhetwerk'?'#5cb85c':'#d9534f';
         li.appendChild(dot);
         const name=document.createElement('div'); name.textContent=data[k].name;
         li.appendChild(name);
@@ -191,7 +192,6 @@ document.getElementById('makeGroups').addEventListener('click',()=>{
         keys.forEach((k,idx)=>{
             groups[idx%numGroups].push(data[k].name);
         });
-        // Zorg dat niemand alleen overblijft
         groups.forEach((g,i)=>{
             if(g.length===1 && groups.length>1){
                 groups[i-1].push(g.pop());
