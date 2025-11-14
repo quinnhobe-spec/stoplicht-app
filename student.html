@@ -5,24 +5,57 @@
 <title>Leerling Dashboard</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-body {font-family: Arial, sans-serif; background:#f5f5f5; margin:20px;}
+body {font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:20px;}
 h2 {margin-bottom:10px;}
-#loginOverlay {
-    position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85);
-    display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px; z-index:1000;
-}
-#loginOverlay button {background:#5cb85c; color:#fff; border:none; border-radius:6px; padding:12px 16px; font-size:16px;}
-#logoutBtn {position:absolute; top:10px; right:10px; padding:6px 10px; border-radius:6px;}
 .card {background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-bottom:20px;}
+.statusListGrid {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; list-style:none; padding:0; margin-top:10px;}
 .status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; color:#000;}
 .status-item .dot {width:30px; height:30px; border-radius:50%; margin-bottom:8px;}
-.statusListGrid {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; list-style:none; padding:0; margin-top:10px;}
 .timerDisplay {font-size:24px; text-align:center; margin-top:10px;}
 .clock-container {display:flex; align-items:center; gap:20px; justify-content:flex-end;}
 #clockDigital {font-size:18px; font-weight:bold;}
 #clockAnalog {width:80px; height:80px; border:2px solid #333; border-radius:50%; position:relative;}
 #clockAnalog .hand {width:50%; height:2px; background:#333; position:absolute; top:50%; left:50%; transform-origin:0% 50%;}
-#startDagMsg {background:#fff; padding:10px; border-radius:8px; margin-bottom:10px; box-shadow:0 2px 4px rgba(0,0,0,0.1);}
+#logoutBtn {position:absolute; top:10px; right:10px; padding:6px 10px; border-radius:6px; cursor:pointer; background:#d9534f; color:#fff; border:none;}
+#startDagMsg {background:#fff; padding:10px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); margin-bottom:10px; font-weight:bold;}
+/* Login Overlay */
+#loginOverlay {
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.6);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+}
+#overlayContent {
+    background:#fff;
+    padding:30px;
+    border-radius:12px;
+    text-align:center;
+    max-width:600px;
+    width:90%;
+    box-shadow:0 4px 12px rgba(0,0,0,0.3);
+}
+#overlayContent h2 {margin-bottom:20px;}
+.studentGrid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+    gap:12px;
+    justify-items:center;
+}
+.studentGrid button {
+    padding:12px 16px;
+    border:none;
+    border-radius:8px;
+    background:#5cb85c;
+    color:#fff;
+    font-size:16px;
+    cursor:pointer;
+    transition:0.2s;
+}
+.studentGrid button:hover {background:#4cae4c;}
 </style>
 </head>
 <body>
@@ -30,7 +63,13 @@ h2 {margin-bottom:10px;}
 <h2>Leerling Dashboard</h2>
 <button id="logoutBtn">Uitloggen</button>
 
-<div id="loginOverlay"></div>
+<!-- Login Overlay -->
+<div id="loginOverlay">
+  <div id="overlayContent">
+    <h2>Kies je naam</h2>
+    <div id="studentButtons" class="studentGrid"></div>
+  </div>
+</div>
 
 <div id="startDagMsg" class="card"></div>
 
@@ -56,6 +95,7 @@ h2 {margin-bottom:10px;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyC8wWU5VUq6YLNzxBObFuVN8WYegKzZTPI",
   authDomain: "stoplichtblokje.firebaseapp.com",
@@ -81,29 +121,29 @@ function updateClock(){
 setInterval(updateClock,1000);
 updateClock();
 
-// Overlay login
+// Login Overlay
 function loadOverlay(){
     const overlay=document.getElementById('loginOverlay');
-    overlay.innerHTML='';
+    const container=document.getElementById('studentButtons');
+    overlay.style.display='flex';
+    container.innerHTML='';
     db.ref('students').once('value').then(snap=>{
         const data=snap.val()||{};
-        const keys=Object.keys(data);
-        keys.forEach(k=>{
+        Object.keys(data).forEach(k=>{
             const btn=document.createElement('button');
-            btn.textContent=data[k].name;
-            btn.addEventListener('click',()=>{
-                currentUser=k;
+            btn.textContent = data[k].name;
+            btn.addEventListener('click', ()=>{
+                currentUser = k;
                 overlay.style.display='none';
             });
-            overlay.appendChild(btn);
+            container.appendChild(btn);
         });
     });
-    overlay.style.display='flex';
 }
 loadOverlay();
 
-// Logout
-document.getElementById('logoutBtn').addEventListener('click',()=>{
+// Logout button
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
     currentUser=null;
     loadOverlay();
 });
@@ -112,19 +152,13 @@ document.getElementById('logoutBtn').addEventListener('click',()=>{
 const statusList=document.getElementById('statusList');
 db.ref('students').on('value',snap=>{
     const data=snap.val()||{};
-    const items=Object.keys(data).map(k=>({id:k,name:data[k].name,status:data[k].status||'aanhetwerk',statusTime:data[k].statusTime||0}));
-    items.sort((a,b)=>{
-        if(a.status==='vraag' && b.status!=='vraag') return -1;
-        if(a.status!=='vraag' && b.status==='vraag') return 1;
-        return a.statusTime-b.statusTime;
-    });
     statusList.innerHTML='';
-    items.forEach(it=>{
+    Object.keys(data).forEach(k=>{
         const li=document.createElement('li'); li.className='status-item';
         const dot=document.createElement('div'); dot.className='dot';
-        dot.style.background=it.status==='aanhetwerk'?'#5cb85c':'#d9534f';
+        dot.style.background = data[k].status==='aanhetwerk'?'#5cb85c':'#d9534f';
         li.appendChild(dot);
-        const name=document.createElement('div'); name.textContent=it.name;
+        const name=document.createElement('div'); name.textContent=data[k].name;
         li.appendChild(name);
         statusList.appendChild(li);
     });
@@ -148,5 +182,6 @@ db.ref('class/startOfDayMessage').on('value',snap=>{
     startDagDiv.textContent = snap.val()?.message || '';
 });
 </script>
+
 </body>
 </html>
