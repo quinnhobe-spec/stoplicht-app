@@ -2,88 +2,99 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Stoplicht - dashboard</title>
+<title>Stoplicht Dashboard</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-body{font-family:Arial,Helvetica,sans-serif;margin:20px;}
-h2{display:flex;justify-content:space-between;align-items:center;}
-h2 span{font-size:16px;color:#555;}
-#clockDigital{font-size:18px;}
-#clockAnalog{width:100px;height:100px;border:2px solid #333;border-radius:50%;position:relative;margin-left:20px;}
-#clockAnalog .hand{width:50%;height:2px;background:#333;position:absolute;top:50%;left:50%;transform-origin:0% 50%;transform:rotate(0deg);}
-#statusList{display:flex;flex-wrap:wrap;gap:10px;list-style:none;padding:0;}
-.status-item{width:18%;min-width:120px;height:120px;border-radius:8px;background:#f7f7f7;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-.dot{width:30px;height:30px;border-radius:50%;margin-bottom:8px;}
-button{padding:8px 12px;margin:4px;border:none;border-radius:6px;cursor:pointer;}
-#trafficLight{display:flex;gap:10px;margin:10px 0;}
-.light{width:30px;height:30px;border-radius:50%;background:#bbb;}
-#timerContainer{margin:10px 0;}
-#groupList{margin:10px 0;}
+body {font-family: Arial, sans-serif; margin:20px; background:#f5f5f5;}
+header {display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;}
+h2 {margin:0;}
+.card {background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-bottom:20px;}
+.card h3 {margin-top:0; margin-bottom:10px;}
+#statusList {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; list-style:none; padding:0;}
+.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; color:#fff;}
+.status-item .dot {width:30px; height:30px; border-radius:50%; margin-bottom:8px;}
+#trafficLight {display:flex; gap:10px;}
+#trafficLight button {flex:1; padding:12px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; color:#fff;}
+#trafficLight button.rood {background:#d9534f;}
+#trafficLight button.oranje {background:#f0ad4e; color:#000;}
+#trafficLight button.groen {background:#5cb85c;}
+#timerContainer input {width:60px; padding:4px; margin-right:10px;}
+button {cursor:pointer; border:none; border-radius:6px; padding:8px 12px; margin-top:4px;}
+button:hover {opacity:0.9;}
+#groupList li {margin-bottom:4px;}
+#chosenName {font-weight:bold;}
+.clock-container {display:flex; align-items:center; gap:20px;}
+#clockDigital {font-size:18px; font-weight:bold;}
+#clockAnalog {width:80px; height:80px; border:2px solid #333; border-radius:50%; position:relative;}
+#clockAnalog .hand {width:50%; height:2px; background:#333; position:absolute; top:50%; left:50%; transform-origin:0% 50%; transform:rotate(0deg);}
 </style>
 </head>
 <body>
-<h2>
-Stoplicht Dashboard 
-<span>
-<span id="clockDigital"></span>
-<div id="clockAnalog">
-  <div class="hand" id="hourHand"></div>
-  <div class="hand" id="minuteHand"></div>
-  <div class="hand" id="secondHand"></div>
-</div>
-</span>
-</h2>
+<header>
+  <h2>Stoplicht Dashboard</h2>
+  <div class="clock-container">
+    <span id="clockDigital"></span>
+    <div id="clockAnalog">
+      <div class="hand" id="hourHand"></div>
+      <div class="hand" id="minuteHand"></div>
+      <div class="hand" id="secondHand"></div>
+    </div>
+  </div>
+</header>
 
-<div id="trafficLight">
-  <button data-light="rood" style="background:#d9534f;color:white;">Rood: Stil</button>
-  <button data-light="oranje" style="background:#f0ad4e;">Oranje: Fluisteren</button>
-  <button data-light="groen" style="background:#5cb85c;color:white;">Groen: Normaal</button>
+<div class="card">
+  <h3>Verkeerslicht Klas</h3>
+  <div id="trafficLight">
+    <button class="rood" data-light="rood">Rood: Stil</button>
+    <button class="oranje" data-light="oranje">Oranje: Fluisteren</button>
+    <button class="groen" data-light="groen">Groen: Normaal</button>
+  </div>
 </div>
 
-<div id="timerContainer">
-  <label>Timer (minuten): <input type="number" id="timerMinutes" value="5" min="1"></label>
+<div class="card">
+  <h3>Timer / Zandloper</h3>
+  <label>Minuten: <input type="number" id="timerMinutes" value="5" min="1"></label>
   <button id="startTimer">Start</button>
   <span id="timerDisplay"></span>
 </div>
 
-<div>
-  <button id="startDag">Start van de dag</button>
+<div class="card">
+  <h3>Stoplicht Leerlingen</h3>
+  <ul id="statusList"></ul>
 </div>
 
-<h3>Stoplicht leerlingen</h3>
-<ul id="statusList"></ul>
-
-<div>
+<div class="card">
+  <h3>Groepjesmaker</h3>
+  <label>Aantal groepjes: <input type="number" id="numGroups" value="2" min="1" max="10"></label>
   <button id="groupMaker">Maak groepjes</button>
   <ul id="groupList"></ul>
 </div>
 
-<div>
+<div class="card">
+  <h3>Namenkiezer</h3>
   <button id="namePicker">Kies een leerling</button>
   <span id="chosenName"></span>
+</div>
+
+<div class="card">
+  <button id="startDag">Start van de dag</button>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+// Firebase init
 const firebaseConfig = {
   apiKey: "AIzaSyC8wWU5VUq6YLNzxBObFuVN8WYegKzZTPI",
   authDomain: "stoplichtblokje.firebaseapp.com",
   databaseURL: "https://stoplichtblokje-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "stoplichtblokje",
-  storageBucket: "stoplichtblokje.firebasedatabase.app",
+  storageBucket: "stoplichtblokje.firebasedestorage.app",
   messagingSenderId: "1019644227104",
   appId: "1:1019644227104:web:833b07ad778a8df5171645"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-
-const statusList = document.getElementById('statusList');
-const trafficButtons = document.querySelectorAll('#trafficLight button');
-const timerDisplay = document.getElementById('timerDisplay');
-const startTimerBtn = document.getElementById('startTimer');
-const timerMinutesInput = document.getElementById('timerMinutes');
-let timerInterval = null;
 
 // Clock
 function updateClock(){
@@ -97,98 +108,121 @@ setInterval(updateClock,1000);
 updateClock();
 
 // Traffic light
-trafficButtons.forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    const light = btn.dataset.light;
-    db.ref('class/trafficLight').set(light);
-  });
+document.querySelectorAll('#trafficLight button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+        db.ref('class/trafficLight').set(btn.dataset.light);
+    });
 });
 
 // Timer
-startTimerBtn.addEventListener('click',()=>{
-  let minutes = parseInt(timerMinutesInput.value)||5;
-  let endTime = Date.now()+minutes*60000;
-  db.ref('class/timer').set({endTime,endTime, running:true});
-  if(timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(()=>{
-    let remaining = Math.max(0,endTime-Date.now());
-    let mins = Math.floor(remaining/60000);
-    let secs = Math.floor((remaining%60000)/1000);
-    timerDisplay.textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
-    if(remaining<=0) clearInterval(timerInterval);
-  },1000);
-});
-
-// Start van de dag
-document.getElementById('startDag').addEventListener('click',()=>{
-  db.ref('students').once('value').then(snap=>{
-    const data = snap.val()||{};
-    Object.keys(data).forEach(k=>{
-      db.ref('students/'+k).update({status:'aanhetwerk',vraagTijd:null});
-    });
-  });
+let timerInterval=null;
+document.getElementById('startTimer').addEventListener('click',()=>{
+    let minutes=parseInt(document.getElementById('timerMinutes').value)||5;
+    let endTime=Date.now()+minutes*60000;
+    db.ref('class/timer').set({endTime,running:true});
+    if(timerInterval) clearInterval(timerInterval);
+    timerInterval=setInterval(()=>{
+        let remaining=Math.max(0,endTime-Date.now());
+        let mins=Math.floor(remaining/60000);
+        let secs=Math.floor((remaining%60000)/1000);
+        document.getElementById('timerDisplay').textContent=`${mins}:${secs.toString().padStart(2,'0')}`;
+        if(remaining<=0) clearInterval(timerInterval);
+    },1000);
 });
 
 // Stoplicht leerlingen
+const statusList=document.getElementById('statusList');
 db.ref('students').on('value',snap=>{
-  const data = snap.val()||{};
-  const items = Object.keys(data).map(k=>{
-    return {id:k,name:data[k].name,status:data[k].status||'aanhetwerk',vraagTijd:data[k].vraagTijd||null};
-  });
-  items.sort((a,b)=>{
-    if(a.status==='vraag' && b.status!=='vraag') return -1;
-    if(a.status!=='vraag' && b.status==='vraag') return 1;
-    if(a.status==='vraag' && b.status==='vraag') return (a.vraagTijd||0)-(b.vraagTijd||0);
-    return 0;
-  });
-  statusList.innerHTML='';
-  items.forEach(it=>{
-    const li = document.createElement('li');
-    li.className='status-item';
-    const dot = document.createElement('div');
-    dot.className='dot';
-    if(it.status==='aanhetwerk') dot.style.background='#5cb85c';
-    else if(it.status==='vraag') dot.style.background='#d9534f';
-    li.appendChild(dot);
-    const name = document.createElement('div');
-    name.textContent = it.name;
-    li.appendChild(name);
-    statusList.appendChild(li);
-  });
+    const data=snap.val()||{};
+    const items=Object.keys(data).map(k=>{
+        return {id:k,name:data[k].name,status:data[k].status||'aanhetwerk',vraagTijd:data[k].vraagTijd||null};
+    });
+    // Eerst degenen met vraag naar boven
+    items.sort((a,b)=>{
+        if(a.status==='vraag' && b.status!=='vraag') return -1;
+        if(a.status!=='vraag' && b.status==='vraag') return 1;
+        if(a.status==='vraag' && b.status==='vraag') return (a.vraagTijd||0)-(b.vraagTijd||0);
+        return 0;
+    });
+    statusList.innerHTML='';
+    items.forEach(it=>{
+        const li=document.createElement('li');
+        li.className='status-item';
+        const dot=document.createElement('div'); dot.className='dot';
+        dot.style.background=it.status==='aanhetwerk'?'#5cb85c':'#d9534f';
+        li.appendChild(dot);
+        const name=document.createElement('div'); name.textContent=it.name;
+        li.appendChild(name);
+        statusList.appendChild(li);
+    });
 });
 
-// Groepjesmaker
+// Groepjesmaker (geen eenling)
 document.getElementById('groupMaker').addEventListener('click',()=>{
-  db.ref('students').once('value').then(snap=>{
-    const data = snap.val()||{};
-    const names = Object.keys(data).map(k=>data[k].name);
-    shuffleArray(names);
-    const groupList = document.getElementById('groupList');
-    groupList.innerHTML='';
-    for(let i=0;i<names.length;i+=2){
-      const li = document.createElement('li');
-      li.textContent = names.slice(i,i+2).join(' & ');
-      groupList.appendChild(li);
-    }
-  });
+    const numGroups=parseInt(document.getElementById('numGroups').value)||2;
+    db.ref('students').once('value').then(snap=>{
+        const data=snap.val()||{};
+        const names=Object.keys(data).map(k=>data[k].name);
+        shuffleArray(names);
+        const groups=[];
+        const baseSize=Math.floor(names.length/numGroups);
+        let remainder=names.length%numGroups;
+        let idx=0;
+        for(let i=0;i<numGroups;i++){
+            let size=baseSize+(remainder>0?1:0);
+            remainder--;
+            groups[i]=names.slice(idx,idx+size);
+            idx+=size;
+        }
+        // Zorg dat niemand alleen is: als laatste groep 1 persoon, voeg bij een andere groep
+        for(let i=0;i<groups.length;i++){
+            if(groups[i].length===1){
+                let added=false;
+                for(let j=0;j<groups.length;j++){
+                    if(j!==i && groups[j].length<3){ // max 3 in een groep
+                        groups[j].push(groups[i][0]);
+                        groups[i]=[];
+                        added=true;
+                        break;
+                    }
+                }
+                if(!added) groups[i]=groups[i]; // fallback
+            }
+        }
+        const groupList=document.getElementById('groupList');
+        groupList.innerHTML='';
+        groups.forEach((g,i)=>{
+            if(g.length>0){
+                const li=document.createElement('li');
+                li.textContent='Groep '+(i+1)+': '+g.join(', ');
+                groupList.appendChild(li);
+            }
+        });
+    });
 });
 
 // Namenkiezer
 document.getElementById('namePicker').addEventListener('click',()=>{
-  db.ref('students').once('value').then(snap=>{
-    const data = snap.val()||{};
-    const names = Object.keys(data).map(k=>data[k].name);
-    if(names.length===0) return;
-    const chosen = names[Math.floor(Math.random()*names.length)];
-    document.getElementById('chosenName').textContent = chosen;
-  });
+    db.ref('students').once('value').then(snap=>{
+        const data = snap.val()||{};
+        const names = Object.keys(data).map(k=>data[k].name);
+        if(names.length===0) return;
+        const chosen = names[Math.floor(Math.random()*names.length)];
+        document.getElementById('chosenName').textContent = chosen;
+    });
+});
+
+// Start van de dag: instructie voor leerlingen
+document.getElementById('startDag').addEventListener('click',()=>{
+    const msg=prompt("Wat moeten de leerlingen doen vandaag?");
+    if(msg) db.ref('class/startOfDayMessage').set({message:msg,timestamp:Date.now()});
 });
 
 // Helper shuffle
 function shuffleArray(array){
   for(let i=array.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [array[i],array[j]] = [array[j],array[i]];
+      const j=Math.floor(Math.random()*(i+1));
+      [array[i],array[j]]=[array[j],array[i]];
   }
 }
 </script>
