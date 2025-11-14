@@ -8,7 +8,7 @@
 body {font-family: Arial, sans-serif; background:#f5f5f5; margin:20px;}
 h2 {margin-bottom:10px;}
 #loginOverlay {
-    position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8);
+    position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85);
     display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px; z-index:1000;
 }
 #loginOverlay button {
@@ -29,6 +29,7 @@ h2 {margin-bottom:10px;}
 .traffic-circle.active.orange {background:#f0ad4e;}
 .traffic-circle.active.green {background:#5cb85c;}
 #startDagMsg {background:#fff; padding:10px; border-radius:8px; margin-top:10px; box-shadow:0 2px 4px rgba(0,0,0,0.1);}
+#groupList {margin-top:10px; list-style:none; padding:0;}
 .clock-container {display:flex; align-items:center; gap:20px; justify-content:flex-end; margin-top:10px;}
 #clockDigital {font-size:18px; font-weight:bold;}
 #clockAnalog {width:80px; height:80px; border:2px solid #333; border-radius:50%; position:relative;}
@@ -50,6 +51,8 @@ h2 {margin-bottom:10px;}
 </div>
 
 <ul id="statusList"></ul>
+
+<ul id="groupList"></ul>
 
 <div id="trafficLightStudent">
     <div class="traffic-circle red"></div>
@@ -128,20 +131,19 @@ document.querySelectorAll('.buttons button').forEach(b=>{
     b.addEventListener('click',()=>{
         if(!currentUser) return;
         const status=b.dataset.status;
-        db.ref('students/'+currentUser).update({status,statusTime:status==='vraag'?Date.now():null});
+        db.ref('students/'+currentUser).update({status,statusTime:status==='vraag'?Date.now():0});
     });
 });
 
-// Stoplicht leerlingen
+// Stoplicht leerlingen en rode bovenaan bij vragen
 const statusList=document.getElementById('statusList');
 db.ref('students').on('value',snap=>{
     const data=snap.val()||{};
-    const items=Object.keys(data).map(k=>({id:k,name:data[k].name,status:data[k].status||'aanhetwerk',statusTime:data[k].statusTime||null}));
+    const items=Object.keys(data).map(k=>({id:k,name:data[k].name,status:data[k].status||'aanhetwerk',statusTime:data[k].statusTime||0}));
     items.sort((a,b)=>{
         if(a.status==='vraag' && b.status!=='vraag') return -1;
         if(a.status!=='vraag' && b.status==='vraag') return 1;
-        if(a.status==='vraag' && b.status==='vraag') return (a.statusTime||0)-(b.statusTime||0);
-        return 0;
+        return a.statusTime-b.statusTime;
     });
     statusList.innerHTML='';
     items.forEach(it=>{
@@ -150,12 +152,12 @@ db.ref('students').on('value',snap=>{
         dot.style.background=it.status==='aanhetwerk'?'#5cb85c':'#d9534f';
         li.appendChild(dot);
         const name=document.createElement('div'); name.textContent=it.name;
-        li.appendChild(name);
         statusList.appendChild(li);
+        li.appendChild(name);
     });
 });
 
-// Stoplicht klas
+// Traffic light klas
 const trafficCircles=document.querySelectorAll('#trafficLightStudent .traffic-circle');
 db.ref('class/trafficLight').on('value',snap=>{
     const color=snap.val();
@@ -166,8 +168,7 @@ db.ref('class/trafficLight').on('value',snap=>{
 // Start van de dag
 const startDagDiv=document.getElementById('startDagMsg');
 db.ref('class/startOfDayMessage').on('value',snap=>{
-    const data=snap.val();
-    startDagDiv.textContent=data?.message || '';
+    startDagDiv.textContent = snap.val()?.message || '';
 });
 
 // Timer
@@ -179,9 +180,19 @@ db.ref('class/timer').on('value',snap=>{
         const mins=Math.floor(remaining/60000);
         const secs=Math.floor((remaining%60000)/1000);
         timerDisplay.textContent=`${mins}:${secs.toString().padStart(2,'0')}`;
-    } else {
-        timerDisplay.textContent='';
-    }
+    } else timerDisplay.textContent='';
+});
+
+// Groepsindeling zichtbaar
+const groupList=document.getElementById('groupList');
+db.ref('class/groups').on('value',snap=>{
+    const groups=snap.val()||[];
+    groupList.innerHTML='';
+    groups.forEach((grp,idx)=>{
+        const li=document.createElement('li');
+        li.textContent=`Groep ${idx+1}: ${grp.join(', ')}`;
+        groupList.appendChild(li);
+    });
 });
 </script>
 </body>
