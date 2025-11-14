@@ -8,11 +8,13 @@
 body {font-family: Arial, sans-serif; background:#f5f5f5; margin:20px;}
 h2 {margin-bottom:10px;}
 .card {background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-bottom:20px;}
-.overlay {
-    position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95);
-    display:flex; justify-content:center; align-items:center; z-index:1000; flex-wrap:wrap; gap:10px; padding:20px;
-}
-.overlay button {padding:12px 20px; border:none; border-radius:8px; font-size:16px; cursor:pointer; background:#333; color:#fff;}
+.clock-container {display:flex; align-items:center; gap:15px; justify-content:flex-end; margin-bottom:20px;}
+#clockDigital {font-size:20px; font-weight:bold;}
+#clockAnalog {width:60px; height:60px; border:2px solid #333; border-radius:50%; position:relative;}
+#clockAnalog .hand {width:50%; height:2px; background:#333; position:absolute; top:50%; left:50%; transform-origin:0% 50%;}
+#startDagDisplay {margin-top:10px; font-weight:bold; white-space: pre-wrap;}
+
+/* Stoplicht leerlingen */
 .status-buttons {display:flex; gap:10px; margin-top:10px;}
 .status-buttons button {flex:1; padding:12px; font-size:16px; border:none; border-radius:8px; cursor:pointer; color:#fff;}
 .green {background:#5cb85c;} 
@@ -20,11 +22,7 @@ h2 {margin-bottom:10px;}
 .statusGrid {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; list-style:none; padding:0;}
 .status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:100px; font-weight:bold; color:#000;}
 .status-item .dot {width:30px; height:30px; border-radius:50%; margin-bottom:8px;}
-.clock-container {display:flex; align-items:center; gap:15px; justify-content:flex-end; margin-bottom:20px;}
-#clockDigital {font-size:20px; font-weight:bold;}
-#clockAnalog {width:60px; height:60px; border:2px solid #333; border-radius:50%; position:relative;}
-#clockAnalog .hand {width:50%; height:2px; background:#333; position:absolute; top:50%; left:50%; transform-origin:0% 50%;}
-#startDagDisplay {margin-top:10px; font-weight:bold; white-space: pre-wrap;}
+
 /* Login Overlay */
 #loginOverlay {position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:1000;}
 #overlayContent {background:#fff; padding:30px; border-radius:12px; text-align:center; max-width:600px; width:90%; box-shadow:0 4px 12px rgba(0,0,0,0.3);}
@@ -32,6 +30,9 @@ h2 {margin-bottom:10px;}
 .studentGrid {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; justify-items:center;}
 .studentGrid button {padding:12px 16px; border:none; border-radius:8px; background:#5cb85c; color:#fff; font-size:16px; cursor:pointer; transition:0.2s;}
 .studentGrid button:hover {background:#4cae4c;}
+
+/* Logout button */
+#logoutBtn {position:fixed; top:20px; right:20px; padding:10px 16px; background:#d9534f; color:#fff; border:none; border-radius:8px; cursor:pointer; z-index:100;}
 </style>
 </head>
 <body>
@@ -43,7 +44,10 @@ h2 {margin-bottom:10px;}
     <div id="studentButtons" class="studentGrid"></div>
   </div>
 </div>
-    
+
+<!-- Logout button -->
+<button id="logoutBtn" style="display:none;">Uitloggen</button>
+
 <!-- Klokken bovenaan -->
 <div class="clock-container">
     <span id="clockDigital"></span>
@@ -56,7 +60,7 @@ h2 {margin-bottom:10px;}
 
 <h2>Leerling Dashboard</h2>
 
-<!-- To Do -->
+<!-- Start van de dag / opdrachten -->
 <div class="card">
 <h3>Start van de dag / opdrachten</h3>
 <div id="startDagDisplay"></div>
@@ -88,12 +92,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 
-// Login Overlay
+// Huidige gebruiker
+let currentUser = null;
+
+// Login overlay
 function loadOverlay(){
     const overlay=document.getElementById('loginOverlay');
     const container=document.getElementById('studentButtons');
     overlay.style.display='flex';
     container.innerHTML='';
+    document.getElementById('logoutBtn').style.display='none';
     db.ref('students').once('value').then(snap=>{
         const data=snap.val()||{};
         Object.keys(data).forEach(k=>{
@@ -102,6 +110,7 @@ function loadOverlay(){
             btn.addEventListener('click', ()=>{
                 currentUser = k;
                 overlay.style.display='none';
+                document.getElementById('logoutBtn').style.display='block';
             });
             container.appendChild(btn);
         });
@@ -109,13 +118,13 @@ function loadOverlay(){
 }
 loadOverlay();
 
-// Logout button
+// Logout knop
 document.getElementById('logoutBtn').addEventListener('click', ()=>{
     currentUser=null;
     loadOverlay();
+});
 
-
-// Clock
+// Klok
 function updateClock(){
     const now=new Date();
     document.getElementById('clockDigital').textContent=now.toLocaleTimeString();
@@ -132,7 +141,7 @@ db.ref('class/startOfDayMessage').on('value',snap=>{
     startDagDisplay.textContent=snap.val()?.message || '';
 });
 
-// Stoplicht realtime
+// Stoplicht leerlingen
 const statusList=document.getElementById('statusList');
 function renderStudents(data){
     const studentsArr=Object.keys(data).map(k=>({id:k,...data[k]}));
@@ -168,5 +177,6 @@ document.getElementById('btnVraag').addEventListener('click',()=>{
 </script>
 </body>
 </html>
+
 
 
