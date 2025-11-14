@@ -96,6 +96,7 @@ button:hover {opacity:0.9;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyC8wWU5VUq6YLNzxBObFuVN8WYegKzZTPI",
   authDomain: "stoplichtblokje.firebaseapp.com",
@@ -124,10 +125,7 @@ document.getElementById('startDagToggle').addEventListener('click',()=>{toggleSe
 document.getElementById('timerToggle').addEventListener('click',()=>{toggleSection('timerSection');});
 document.getElementById('groupToggle').addEventListener('click',()=>{toggleSection('groupSection');});
 document.getElementById('nameToggle').addEventListener('click',()=>{toggleSection('nameSection');});
-function toggleSection(id){
-    const el=document.getElementById(id);
-    el.style.display = el.style.display==='none'?'block':'none';
-}
+function toggleSection(id){ const el=document.getElementById(id); el.style.display = el.style.display==='none'?'block':'none'; }
 
 // Start van de dag
 const startDagMsg=document.getElementById('startDagMsg');
@@ -148,7 +146,6 @@ db.ref('class/trafficLight').on('value',snap=>{
 });
 
 // Timer
-let timerInterval=null;
 const timerDisplay=document.getElementById('timerDisplay');
 document.getElementById('startTimerBtn').addEventListener('click',()=>{
     const mins=parseInt(document.getElementById('timerMinutes').value)||5;
@@ -164,6 +161,7 @@ db.ref('class/timer').on('value',snap=>{
         const mins=Math.floor(remaining/60000);
         const secs=Math.floor((remaining%60000)/1000);
         timerDisplay.textContent=`${mins}:${secs.toString().padStart(2,'0')}`;
+        if(remaining<=0){db.ref('class/timer').update({running:false}); alert('Timer afgelopen!');}
     } else timerDisplay.textContent='';
 });
 
@@ -198,24 +196,14 @@ document.getElementById('groupMakerBtn').addEventListener('click',()=>{
         const shuffled=keys.sort(()=>Math.random()-0.5);
         const groups=[...Array(numGroups)].map(()=>[]);
         let i=0;
-        shuffled.forEach(k=>{
-            groups[i].push(data[k].name);
-            i=(i+1)%numGroups;
-        });
-        // adjust last group if someone alone
+        shuffled.forEach(k=>{groups[i].push(data[k].name); i=(i+1)%numGroups;});
+        // prevent alone
         for(let g=0; g<groups.length; g++){
-            if(groups[g].length===1 && groups.length>1){
-                // move person to previous group
-                groups[g-1]=groups[g-1].concat(groups[g]);
-                groups.splice(g,1);
-            }
+            if(groups[g].length===1 && groups.length>1){groups[g-1]=groups[g-1].concat(groups[g]); groups.splice(g,1);}
         }
-        const ul=document.getElementById('groupList');
-        ul.innerHTML='';
-        groups.forEach((grp,idx)=>{
-            const li=document.createElement('li'); li.textContent=`Groep ${idx+1}: ${grp.join(', ')}`;
-            ul.appendChild(li);
-        });
+        const ul=document.getElementById('groupList'); ul.innerHTML='';
+        groups.forEach((grp,idx)=>{const li=document.createElement('li'); li.textContent=`Groep ${idx+1}: ${grp.join(', ')}`; ul.appendChild(li);});
+        db.ref('class/groups').set(groups);
         document.getElementById('groupList').style.display='block';
     });
 });
