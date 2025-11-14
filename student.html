@@ -81,6 +81,20 @@ h2{margin-bottom:20px;}
     min-width:120px;
 }
 .login-name:hover{background:#0056b3;}
+
+/* Uitloggen knop */
+#logoutBtn{
+    display:none;
+    margin-top:10px;
+    padding:10px 16px;
+    border:none;
+    border-radius:6px;
+    background:#ff6600;
+    color:white;
+    cursor:pointer;
+    font-size:16px;
+}
+#logoutBtn:hover{background:#cc5200;}
 </style>
 </head>
 <body>
@@ -96,6 +110,8 @@ h2{margin-bottom:20px;}
     <button class="aanhetwerk" data-status="aanhetwerk">🟩 Aan het werk / Geen vragen</button>
     <button class="vraag" data-status="vraag">🟥 Ik heb een vraag</button>
 </div>
+
+<button id="logoutBtn">Uitloggen</button>
 
 <p id="msg" style="color:green" aria-live="polite"></p>
 
@@ -122,12 +138,14 @@ const db = firebase.database();
 const statusList = document.getElementById('statusList');
 const loginOverlay = document.getElementById('loginOverlay');
 const loginNamesDiv = document.getElementById('loginNames');
+const logoutBtn = document.getElementById('logoutBtn');
 let currentStudentId = null;
 let currentStudentName = null;
 
 // Laad studenten en toon overlay altijd
 function loadStudents(){
     loginOverlay.style.display='flex';
+    logoutBtn.style.display = 'none';
     db.ref('students').once('value').then(snapshot=>{
         const data = snapshot.val() || {};
         loginNamesDiv.innerHTML = '';
@@ -139,6 +157,7 @@ function loadStudents(){
                 currentStudentId = k;
                 currentStudentName = data[k].name;
                 loginOverlay.style.display='none';
+                logoutBtn.style.display='inline-block';
             });
             loginNamesDiv.appendChild(nameDiv);
         });
@@ -198,6 +217,14 @@ function renderStatuses(snapshot){
         statusList.appendChild(li);
     });
 }
+
+// Uitloggen knop
+logoutBtn.addEventListener('click', ()=>{
+    currentStudentId = null;
+    currentStudentName = null;
+    loginOverlay.style.display='flex';
+    logoutBtn.style.display='none';
+});
 
 // Start realtime listener en load overlay
 db.ref('students').on('value', renderStatuses);
