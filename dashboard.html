@@ -6,18 +6,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 body {font-family: Arial, sans-serif; background:#f5f5f5; margin:20px;}
-header {display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;}
-h2 {margin:0;}
+header {display:flex; justify-content:flex-end; align-items:center; margin-bottom:20px;}
+h2 {margin-bottom:10px;}
 .card {background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-bottom:20px;}
 .card h3 {cursor:pointer; margin-bottom:10px;}
 #statusList {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; list-style:none; padding:0;}
-.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; color:#000;}
+.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; color:#000; cursor:pointer;}
 .status-item .dot {width:30px; height:30px; border-radius:50%; margin-bottom:8px;}
-#trafficLight {width:100px; margin:0 auto; display:flex; flex-direction:column; align-items:center; gap:8px;}
-.traffic-circle {width:40px; height:40px; border-radius:50%; background:#ccc; cursor:pointer;}
-.traffic-circle.active.red {background:#d9534f;}
-.traffic-circle.active.orange {background:#f0ad4e;}
-.traffic-circle.active.green {background:#5cb85c;}
 .timerDisplay {font-size:24px; text-align:center; margin-top:10px;}
 button {cursor:pointer; border:none; border-radius:6px; padding:6px 10px; margin-top:4px;}
 button:hover {opacity:0.9;}
@@ -31,7 +26,6 @@ button:hover {opacity:0.9;}
 <body>
 
 <header>
-<h2>Leerkracht Dashboard</h2>
 <div class="clock-container">
     <span id="clockDigital"></span>
     <div id="clockAnalog">
@@ -52,12 +46,8 @@ button:hover {opacity:0.9;}
 </div>
 
 <div class="card">
-<h3>Verkeerslicht Klas</h3>
-<div id="trafficLight">
-    <div class="traffic-circle red" data-color="red"></div>
-    <div class="traffic-circle orange" data-color="orange"></div>
-    <div class="traffic-circle green" data-color="green"></div>
-</div>
+<h3>Stoplicht Leerlingen</h3>
+<ul id="statusList"></ul>
 </div>
 
 <div class="card">
@@ -72,8 +62,11 @@ button:hover {opacity:0.9;}
 </div>
 
 <div class="card">
-<h3>Stoplicht Leerlingen</h3>
-<ul id="statusList"></ul>
+<h3 id="nameToggle">Namenkiezer</h3>
+<div id="nameSection">
+    <button id="namePickerBtn">Kies een leerling</button>
+    <div id="chosenName"></div>
+</div>
 </div>
 
 <div class="card">
@@ -82,14 +75,6 @@ button:hover {opacity:0.9;}
     <label>Aantal groepjes: <input type="number" id="numGroups" value="2" min="1" max="10"></label>
     <button id="groupMakerBtn">Maak groepjes</button>
     <ul id="groupList"></ul>
-</div>
-</div>
-
-<div class="card">
-<h3 id="nameToggle">Namenkiezer</h3>
-<div id="nameSection">
-    <button id="namePickerBtn">Kies een leerling</button>
-    <div id="chosenName"></div>
 </div>
 </div>
 
@@ -136,15 +121,6 @@ document.getElementById('startDagBtn').addEventListener('click',()=>{
     db.ref('class/startOfDayMessage').set({message:document.getElementById('startDagInput').value});
 });
 
-// Traffic light
-const circles=document.querySelectorAll('.traffic-circle');
-circles.forEach(c=>c.addEventListener('click',()=>{db.ref('class/trafficLight').set(c.dataset.color);}));
-db.ref('class/trafficLight').on('value',snap=>{
-    const color=snap.val();
-    circles.forEach(c=>c.classList.remove('active','red','orange','green'));
-    if(color) document.querySelector(`.traffic-circle.${color}`).classList.add('active',color);
-});
-
 // Timer
 const timerDisplay=document.getElementById('timerDisplay');
 document.getElementById('startTimerBtn').addEventListener('click',()=>{
@@ -165,7 +141,7 @@ db.ref('class/timer').on('value',snap=>{
     } else timerDisplay.textContent='';
 });
 
-// Stoplicht leerlingen
+// Stoplicht leerlingen + docent kan klikken om status te veranderen
 const statusList=document.getElementById('statusList');
 db.ref('students').on('value',snap=>{
     const data=snap.val()||{};
@@ -183,6 +159,11 @@ db.ref('students').on('value',snap=>{
         li.appendChild(dot);
         const name=document.createElement('div'); name.textContent=it.name;
         li.appendChild(name);
+        // Docent kan op leerling klikken om groen/rood wisselen
+        li.addEventListener('click',()=> {
+            const newStatus=it.status==='aanhetwerk'?'vraag':'aanhetwerk';
+            db.ref('students/'+it.id).update({status:newStatus,statusTime:newStatus==='vraag'?Date.now():0});
+        });
         statusList.appendChild(li);
     });
 });
@@ -197,7 +178,6 @@ document.getElementById('groupMakerBtn').addEventListener('click',()=>{
         const groups=[...Array(numGroups)].map(()=>[]);
         let i=0;
         shuffled.forEach(k=>{groups[i].push(data[k].name); i=(i+1)%numGroups;});
-        // prevent alone
         for(let g=0; g<groups.length; g++){
             if(groups[g].length===1 && groups.length>1){groups[g-1]=groups[g-1].concat(groups[g]); groups.splice(g,1);}
         }
