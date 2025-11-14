@@ -33,7 +33,6 @@ h2 button{
 .student small{font-size:12px;opacity:0.9;}
 .aanhetwerk{background:#5cb85c}
 .vraag{background:#d9534f}
-.loading{opacity:0.6}
 button{margin-left:8px}
 .delete-btn{
     background:none;
@@ -72,19 +71,16 @@ const db = firebase.database();
 const listEl = document.getElementById('list');
 const STATUSES = ['aanhetwerk','vraag'];
 
-// Veilig tekst tonen
-function sanitizeText(s){return String(s||'').trim();}
-function formatTime(ts){if(!ts) return ''; const d=new Date(ts); return d.toLocaleString();}
-
 // Render dashboard
 function render(items){
     listEl.innerHTML='';
     if(items.length===0){listEl.textContent='Geen studenten gevonden.'; return;}
 
-    // Sorteer: eerst 'vraag', dan rest
+    // Sorteer: eerst 'vraag' op volgorde van eerste klik, dan rest
     items.sort((a,b)=>{
         if(a.status==='vraag' && b.status!=='vraag') return -1;
         if(a.status!=='vraag' && b.status==='vraag') return 1;
+        if(a.status==='vraag' && b.status==='vraag') return (a.vraagTijd||0)-(b.vraagTijd||0);
         return 0;
     });
 
@@ -93,15 +89,11 @@ function render(items){
         const status = STATUSES.includes(it.status) ? it.status : 'aanhetwerk';
         div.className='student '+status;
 
-        // links: naam + laatste update
         const left=document.createElement('div');
         const name=document.createElement('div');
-        name.textContent=sanitizeText(it.name)||( '(geen naam)');
-        const meta=document.createElement('small');
-        meta.textContent=it.lastUpdated?'Laatste: '+formatTime(it.lastUpdated):'';
-        left.appendChild(name); left.appendChild(meta);
+        name.textContent=it.name;
+        left.appendChild(name);
 
-        // rechts: status label + knop + delete
         const right=document.createElement('div');
         const statusLabel=document.createElement('small');
         statusLabel.textContent=status==='aanhetwerk'?'Aan het werk':'Heeft een vraag';
@@ -109,11 +101,9 @@ function render(items){
 
         const btn=document.createElement('button');
         btn.textContent='Verander status';
-        btn.title='Klik om status te veranderen';
         btn.addEventListener('click', ev=>{ev.stopPropagation(); cycleStatus(it.id);});
         right.appendChild(btn);
 
-        // Delete knop
         const delBtn=document.createElement('button');
         delBtn.className='delete-btn';
         delBtn.textContent='🗑️';
@@ -139,9 +129,11 @@ function cycleStatus(id){
         const cur = snap.val();
         const idx = STATUSES.indexOf(cur);
         const next = STATUSES[(idx+1)%STATUSES.length]||STATUSES[0];
-        db.ref('students/'+id).update({status:next,lastUpdated:Date.now()})
-          .catch(err=>console.error('Update mislukt',err));
-    }).catch(err=>console.error('Lezen mislukt',err));
+        const updates = {status: next};
+        if(next==='vraag' && !snap.val().vraagTijd) updates.vraagTijd = Date.now();
+        if(next!=='vraag') updates.vraagTijd=null;
+        db.ref('students/'+id).update(updates);
+    });
 }
 
 // Realtime updates
@@ -150,14 +142,10 @@ db.ref('students').on('value', snapshot=>{
     const arr = Object.keys(val).map(k=>({
         id:k,
         name:val[k].name,
-        status:val[k].status,
-        lastUpdated:val[k].lastUpdated
+        status:val[k].status||'aanhetwerk',
+        vraagTijd:val[k].vraagTijd||null
     }));
     render(arr);
-    listEl.classList.remove('loading');
-}, err=>{
-    listEl.textContent='Laden mislukt: '+(err && err.message);
-    listEl.classList.remove('loading');
 });
 
 // Voeg leerling toe
@@ -166,9 +154,9 @@ document.getElementById('addStudentBtn').addEventListener('click', ()=>{
     if(naam && naam.trim()!==''){
         const id = naam.toLowerCase().replace(/\s+/g,'_');
         db.ref('students/'+id).set({
-            name:naam.trim(),
-            status:'aanhetwerk',
-            lastUpdated:Date.now()
+            name: naam.trim(),
+            status: 'aanhetwerk',
+            vraagTijd: null
         });
     }
 });
