@@ -11,10 +11,10 @@ h2 {margin:0;}
 .card {background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-bottom:20px;}
 .card h3 {cursor:pointer; margin-bottom:10px;}
 #statusList {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; list-style:none; padding:0;}
-.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; color:#fff;}
+.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; color:#000;}
 .status-item .dot {width:30px; height:30px; border-radius:50%; margin-bottom:8px;}
-#trafficLight {width:80px; margin:0 auto; display:flex; flex-direction:column; align-items:center; gap:8px;}
-.traffic-circle {width:40px; height:40px; border-radius:50%; background:#ccc;}
+#trafficLight {width:100px; margin:0 auto; display:flex; flex-direction:column; align-items:center; gap:8px;}
+.traffic-circle {width:40px; height:40px; border-radius:50%; background:#ccc; cursor:pointer;}
 .traffic-circle.active.red {background:#d9534f;}
 .traffic-circle.active.orange {background:#f0ad4e;}
 .traffic-circle.active.green {background:#5cb85c;}
@@ -26,7 +26,6 @@ button:hover {opacity:0.9;}
 #clockDigital {font-size:18px; font-weight:bold;}
 #clockAnalog {width:80px; height:80px; border:2px solid #333; border-radius:50%; position:relative;}
 #clockAnalog .hand {width:50%; height:2px; background:#333; position:absolute; top:50%; left:50%; transform-origin:0% 50%;}
-#startDagMsg {margin-top:10px; font-weight:bold;}
 </style>
 </head>
 <body>
@@ -67,6 +66,7 @@ button:hover {opacity:0.9;}
     <label>Minuten: <input type="number" id="timerMinutes" value="5" min="1"></label>
     <button id="startTimerBtn">Start</button>
     <button id="stopTimerBtn">Stop</button>
+    <button id="deleteTimerBtn">Verwijderen</button>
     <div class="timerDisplay" id="timerDisplay"></div>
 </div>
 </div>
@@ -96,7 +96,6 @@ button:hover {opacity:0.9;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-// --- Firebase Config ---
 const firebaseConfig = {
   apiKey: "AIzaSyC8wWU5VUq6YLNzxBObFuVN8WYegKzZTPI",
   authDomain: "stoplichtblokje.firebaseapp.com",
@@ -127,9 +126,13 @@ const startDagMsg=document.getElementById('startDagMsg');
 db.ref('class/startOfDayMessage').on('value',snap=>{ startDagMsg.textContent = snap.val()?.message || ''; });
 document.getElementById('startDagBtn').addEventListener('click',()=>{ db.ref('class/startOfDayMessage').set({message:document.getElementById('startDagInput').value}); });
 
-// Verkeerslicht
+// Verkeerslicht docent
 const circles=document.querySelectorAll('.traffic-circle');
-circles.forEach(c=>{ c.addEventListener('click',()=>{ db.ref('class/trafficLight').set(c.dataset.color); }); });
+circles.forEach(c=>{
+    c.addEventListener('click',()=>{
+        db.ref('class/trafficLight').set(c.dataset.color);
+    });
+});
 db.ref('class/trafficLight').on('value',snap=>{
     const color=snap.val();
     circles.forEach(c=>c.classList.remove('active','red','orange','green'));
@@ -140,33 +143,24 @@ db.ref('class/trafficLight').on('value',snap=>{
 let timerInterval=null;
 const timerDisplay=document.getElementById('timerDisplay');
 document.getElementById('timerToggle').addEventListener('click',()=>document.getElementById('timerSection').style.display=document.getElementById('timerSection').style.display==='none'?'block':'none');
+
 document.getElementById('startTimerBtn').addEventListener('click',()=>{
     const minutes=parseInt(document.getElementById('timerMinutes').value)||5;
     const endTime=Date.now()+minutes*60000;
     db.ref('class/timer').set({endTime,running:true});
-    if(timerInterval) clearInterval(timerInterval);
-    timerInterval=setInterval(()=>{
-        const remaining=Math.max(0,endTime-Date.now());
-        const mins=Math.floor(remaining/60000);
-        const secs=Math.floor((remaining%60000)/1000);
-        timerDisplay.textContent=`${mins}:${secs.toString().padStart(2,'0')}`;
-        if(remaining<=0){
-            clearInterval(timerInterval);
-            new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg').play();
-        }
-    },1000);
 });
-document.getElementById('stopTimerBtn').addEventListener('click',()=>{ if(timerInterval) clearInterval(timerInterval); });
+document.getElementById('stopTimerBtn').addEventListener('click',()=>{ db.ref('class/timer').update({running:false}); });
+document.getElementById('deleteTimerBtn').addEventListener('click',()=>{ db.ref('class/timer').remove(); });
 
 // Stoplicht leerlingen
 const statusList=document.getElementById('statusList');
 db.ref('students').on('value',snap=>{
     const data=snap.val()||{};
-    const items=Object.keys(data).map(k=>({id:k,name:data[k].name,status:data[k].status||'aanhetwerk',vraagTijd:data[k].vraagTijd||null}));
+    const items=Object.keys(data).map(k=>({id:k,name:data[k].name,status:data[k].status||'aanhetwerk',statusTime:data[k].statusTime||null}));
     items.sort((a,b)=>{
         if(a.status==='vraag' && b.status!=='vraag') return -1;
         if(a.status!=='vraag' && b.status==='vraag') return 1;
-        if(a.status==='vraag' && b.status==='vraag') return (a.vraagTijd||0)-(b.vraagTijd||0);
+        if(a.status==='vraag' && b.status==='vraag') return (a.statusTime||0)-(b.statusTime||0);
         return 0;
     });
     statusList.innerHTML='';
@@ -176,8 +170,8 @@ db.ref('students').on('value',snap=>{
         dot.style.background=it.status==='aanhetwerk'?'#5cb85c':'#d9534f';
         li.appendChild(dot);
         const name=document.createElement('div'); name.textContent=it.name;
-        li.appendChild(name);
         statusList.appendChild(li);
+        li.appendChild(name);
     });
 });
 </script>
