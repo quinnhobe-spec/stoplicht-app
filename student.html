@@ -5,61 +5,37 @@
 <title>Leerling Dashboard</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-body {font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:20px;}
+body {font-family: Arial, sans-serif; background:#f5f5f5; margin:20px;}
 h2 {margin-bottom:10px;}
 .card {background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-bottom:20px;}
-.statusListGrid {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; list-style:none; padding:0; margin-top:10px;}
-.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:120px; font-weight:bold; color:#000;}
-.status-item .dot {width:30px; height:30px; border-radius:50%; margin-bottom:8px;}
-.buttons {display:flex; gap:10px; margin-top:10px;}
-.buttons button {flex:1; padding:12px; border:none; border-radius:8px; font-size:16px; cursor:pointer; color:#fff;}
+.overlay {
+    position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95);
+    display:flex; justify-content:center; align-items:center; z-index:1000; flex-wrap:wrap;
+    gap:10px; padding:20px;
+}
+.overlay button {padding:12px 20px; border:none; border-radius:8px; font-size:16px; cursor:pointer; background:#333; color:#fff;}
+.status-buttons {display:flex; gap:10px; margin-top:10px;}
+.status-buttons button {flex:1; padding:12px; font-size:16px; border:none; border-radius:8px; cursor:pointer; color:#fff;}
 .green {background:#5cb85c;} 
 .red {background:#d9534f;}
-.timerDisplay {font-size:24px; text-align:center; margin-top:10px;}
-.clock-container {display:flex; align-items:center; gap:20px; justify-content:flex-end;}
-#clockDigital {font-size:18px; font-weight:bold;}
-#clockAnalog {width:80px; height:80px; border:2px solid #333; border-radius:50%; position:relative;}
+.statusGrid {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; list-style:none; padding:0;}
+.status-item {display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; height:100px; font-weight:bold; color:#000;}
+.status-item .dot {width:30px; height:30px; border-radius:50%; margin-bottom:8px;}
+.clock-container {
+    display:flex; align-items:center; gap:15px; justify-content:flex-end; margin-bottom:20px;
+}
+#clockDigital {font-size:20px; font-weight:bold;}
+#clockAnalog {width:60px; height:60px; border:2px solid #333; border-radius:50%; position:relative;}
 #clockAnalog .hand {width:50%; height:2px; background:#333; position:absolute; top:50%; left:50%; transform-origin:0% 50%;}
-#logoutBtn {position:absolute; top:10px; right:10px; padding:6px 10px; border-radius:6px; cursor:pointer; background:#d9534f; color:#fff; border:none;}
-#startDagMsg {background:#fff; padding:10px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); margin-bottom:10px; font-weight:bold;}
-/* Login Overlay */
-#loginOverlay {position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:1000;}
-#overlayContent {background:#fff; padding:30px; border-radius:12px; text-align:center; max-width:600px; width:90%; box-shadow:0 4px 12px rgba(0,0,0,0.3);}
-#overlayContent h2 {margin-bottom:20px;}
-.studentGrid {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; justify-items:center;}
-.studentGrid button {padding:12px 16px; border:none; border-radius:8px; background:#5cb85c; color:#fff; font-size:16px; cursor:pointer; transition:0.2s;}
-.studentGrid button:hover {background:#4cae4c;}
 </style>
 </head>
 <body>
 
-<h2>Leerling Dashboard</h2>
-<button id="logoutBtn">Uitloggen</button>
-
-<!-- Login Overlay -->
-<div id="loginOverlay">
-  <div id="overlayContent">
-    <h2>Kies je naam</h2>
-    <div id="studentButtons" class="studentGrid"></div>
-  </div>
+<!-- Overlay login -->
+<div id="overlay" class="overlay">
 </div>
 
-<div id="startDagMsg" class="card"></div>
-
-<div class="card">
-<h3>Stoplicht Leerlingen</h3>
-<div class="buttons">
-    <button class="green" id="btnAanHetWerk">🟩 Aan het werk / Geen vragen</button>
-    <button class="red" id="btnVraag">🟥 Ik heb een vraag</button>
-</div>
-<ul id="statusList" class="statusListGrid"></ul>
-</div>
-
-<div class="card">
-<h3>Timer</h3>
-<div class="timerDisplay" id="timerDisplay"></div>
-</div>
-
+<!-- Klokken bovenaan -->
 <div class="clock-container">
     <span id="clockDigital"></span>
     <div id="clockAnalog">
@@ -67,6 +43,24 @@ h2 {margin-bottom:10px;}
         <div class="hand" id="minuteHand"></div>
         <div class="hand" id="secondHand"></div>
     </div>
+</div>
+
+<h2>Leerling Dashboard</h2>
+
+<!-- Start van de dag / opdrachten -->
+<div class="card">
+<h3>Start van de dag / opdrachten</h3>
+<div id="startDagDisplay" style="margin-top:10px; font-weight:bold;"></div>
+</div>
+
+<!-- Stoplicht leerlingen -->
+<div class="card">
+<h3>Stoplicht Leerlingen</h3>
+<div class="status-buttons">
+    <button class="green" id="btnAanHetWerk">🟩 Aan het werk / Geen vragen</button>
+    <button class="red" id="btnVraag">🟥 Ik heb een vraag</button>
+</div>
+<ul id="statusList" class="statusGrid"></ul>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -85,7 +79,26 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 
+// Overlay login
+const overlay=document.getElementById('overlay');
 let currentUser=null;
+
+function loadStudents(){
+    db.ref('students').once('value').then(snap=>{
+        const data=snap.val()||{};
+        overlay.innerHTML='';
+        Object.keys(data).forEach(k=>{
+            const btn=document.createElement('button');
+            btn.textContent=data[k].name;
+            btn.addEventListener('click',()=>{
+                currentUser=k;
+                overlay.style.display='none';
+            });
+            overlay.appendChild(btn);
+        });
+    });
+}
+loadStudents();
 
 // Clock
 function updateClock(){
@@ -98,43 +111,16 @@ function updateClock(){
 setInterval(updateClock,1000);
 updateClock();
 
-// Login Overlay
-function loadOverlay(){
-    const overlay=document.getElementById('loginOverlay');
-    const container=document.getElementById('studentButtons');
-    overlay.style.display='flex';
-    container.innerHTML='';
-    db.ref('students').once('value').then(snap=>{
-        const data=snap.val()||{};
-        Object.keys(data).forEach(k=>{
-            const btn=document.createElement('button');
-            btn.textContent = data[k].name;
-            btn.addEventListener('click', ()=>{
-                currentUser = k;
-                overlay.style.display='none';
-            });
-            container.appendChild(btn);
-        });
-    });
-}
-loadOverlay();
-
-// Logout button
-document.getElementById('logoutBtn').addEventListener('click', ()=>{
-    currentUser=null;
-    loadOverlay();
-});
-
 // Start van de dag
-const startDagDiv=document.getElementById('startDagMsg');
+const startDagDisplay=document.getElementById('startDagDisplay');
 db.ref('class/startOfDayMessage').on('value',snap=>{
-    startDagDiv.textContent = snap.val()?.message || '';
+    startDagDisplay.textContent=snap.val()?.message || '';
 });
 
-// Stoplicht leerlingen realtime
+// Stoplicht realtime
 const statusList=document.getElementById('statusList');
 function renderStudents(data){
-    const studentsArr = Object.keys(data).map(k=>({id:k, ...data[k]}));
+    const studentsArr=Object.keys(data).map(k=>({id:k,...data[k]}));
     studentsArr.sort((a,b)=>{
         if(a.status==='vraag' && b.status!=='vraag') return -1;
         if(a.status!=='vraag' && b.status==='vraag') return 1;
@@ -146,7 +132,7 @@ function renderStudents(data){
         const dot=document.createElement('div'); dot.className='dot';
         dot.style.background = s.status==='aanhetwerk'?'#5cb85c':'#d9534f';
         li.appendChild(dot);
-        const name=document.createElement('div'); name.textContent=s.name; name.style.color='#000';
+        const name=document.createElement('div'); name.textContent=s.name;
         li.appendChild(name);
         statusList.appendChild(li);
     });
@@ -155,7 +141,7 @@ db.ref('students').on('value',snap=>{
     renderStudents(snap.val()||{});
 });
 
-// Stoplicht buttons
+// Stoplicht knoppen
 document.getElementById('btnAanHetWerk').addEventListener('click',()=>{
     if(!currentUser) return;
     db.ref('students/'+currentUser).update({status:'aanhetwerk',statusTime:Date.now()});
@@ -165,16 +151,9 @@ document.getElementById('btnVraag').addEventListener('click',()=>{
     db.ref('students/'+currentUser).update({status:'vraag',statusTime:Date.now()});
 });
 
-// Timer
-const timerDisplay=document.getElementById('timerDisplay');
-db.ref('class/timer').on('value',snap=>{
-    const t=snap.val();
-    if(t && t.running){
-        const remaining=Math.max(0,t.endTime-Date.now());
-        const mins=Math.floor(remaining/60000);
-        const secs=Math.floor((remaining%60000)/1000);
-        timerDisplay.textContent=`${mins}:${secs.toString().padStart(2,'0')}`;
-    } else timerDisplay.textContent='';
+// Overlay opnieuw tonen bij refresh
+window.addEventListener('beforeunload',()=>{
+    overlay.style.display='flex';
 });
 </script>
 </body>
