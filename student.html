@@ -152,8 +152,8 @@ db.ref('students').on('value',snap=>{
         dot.style.background=it.status==='aanhetwerk'?'#5cb85c':'#d9534f';
         li.appendChild(dot);
         const name=document.createElement('div'); name.textContent=it.name;
-        statusList.appendChild(li);
         li.appendChild(name);
+        statusList.appendChild(li);
     });
 });
 
