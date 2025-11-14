@@ -23,42 +23,11 @@ h2 {margin-bottom:10px;}
 #logoutBtn {position:absolute; top:10px; right:10px; padding:6px 10px; border-radius:6px; cursor:pointer; background:#d9534f; color:#fff; border:none;}
 #startDagMsg {background:#fff; padding:10px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); margin-bottom:10px; font-weight:bold;}
 /* Login Overlay */
-#loginOverlay {
-    position: fixed;
-    top:0; left:0;
-    width:100%; height:100%;
-    background: rgba(0,0,0,0.6);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:1000;
-}
-#overlayContent {
-    background:#fff;
-    padding:30px;
-    border-radius:12px;
-    text-align:center;
-    max-width:600px;
-    width:90%;
-    box-shadow:0 4px 12px rgba(0,0,0,0.3);
-}
+#loginOverlay {position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:1000;}
+#overlayContent {background:#fff; padding:30px; border-radius:12px; text-align:center; max-width:600px; width:90%; box-shadow:0 4px 12px rgba(0,0,0,0.3);}
 #overlayContent h2 {margin-bottom:20px;}
-.studentGrid {
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
-    gap:12px;
-    justify-items:center;
-}
-.studentGrid button {
-    padding:12px 16px;
-    border:none;
-    border-radius:8px;
-    background:#5cb85c;
-    color:#fff;
-    font-size:16px;
-    cursor:pointer;
-    transition:0.2s;
-}
+.studentGrid {display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; justify-items:center;}
+.studentGrid button {padding:12px 16px; border:none; border-radius:8px; background:#5cb85c; color:#fff; font-size:16px; cursor:pointer; transition:0.2s;}
 .studentGrid button:hover {background:#4cae4c;}
 </style>
 </head>
@@ -165,31 +134,35 @@ db.ref('class/startOfDayMessage').on('value',snap=>{
 // Stoplicht leerlingen realtime
 const statusList=document.getElementById('statusList');
 function renderStudents(data){
+    const studentsArr = Object.keys(data).map(k=>({id:k, ...data[k]}));
+    studentsArr.sort((a,b)=>{
+        if(a.status==='vraag' && b.status!=='vraag') return -1;
+        if(a.status!=='vraag' && b.status==='vraag') return 1;
+        return a.statusTime - b.statusTime;
+    });
     statusList.innerHTML='';
-    Object.keys(data).forEach(k=>{
+    studentsArr.forEach(s=>{
         const li=document.createElement('li'); li.className='status-item';
         const dot=document.createElement('div'); dot.className='dot';
-        if(data[k].status==='aanhetwerk') dot.style.background='#5cb85c';
-        else dot.style.background='#d9534f';
+        dot.style.background = s.status==='aanhetwerk'?'#5cb85c':'#d9534f';
         li.appendChild(dot);
-        const name=document.createElement('div'); name.textContent=data[k].name;
+        const name=document.createElement('div'); name.textContent=s.name; name.style.color='#000';
         li.appendChild(name);
         statusList.appendChild(li);
     });
 }
 db.ref('students').on('value',snap=>{
-    const data=snap.val()||{};
-    renderStudents(data);
+    renderStudents(snap.val()||{});
 });
 
 // Stoplicht buttons
 document.getElementById('btnAanHetWerk').addEventListener('click',()=>{
     if(!currentUser) return;
-    db.ref('students/'+currentUser).update({status:'aanhetwerk'});
+    db.ref('students/'+currentUser).update({status:'aanhetwerk',statusTime:Date.now()});
 });
 document.getElementById('btnVraag').addEventListener('click',()=>{
     if(!currentUser) return;
-    db.ref('students/'+currentUser).update({status:'vraag'});
+    db.ref('students/'+currentUser).update({status:'vraag',statusTime:Date.now()});
 });
 
 // Timer
@@ -204,6 +177,5 @@ db.ref('class/timer').on('value',snap=>{
     } else timerDisplay.textContent='';
 });
 </script>
-
 </body>
 </html>
