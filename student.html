@@ -5,42 +5,28 @@
 <title>Stoplicht - leerling</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-body{font-family:Arial,Helvetica,sans-serif;padding:20px;max-width:1000px;margin:auto;position:relative;}
-h2{margin-bottom:20px;}
-.buttons button{display:block;width:100%;padding:14px;margin:8px 0;font-size:18px;border:none;border-radius:8px;color:white;cursor:pointer}
-.aanhetwerk{background:#5cb85c}
-.vraag{background:#d9534f}
-.status-list{margin-top:18px;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:10px;}
-.status-item{display:flex;flex-direction:column;align-items:center;justify-content:center;width:18%;min-width:120px;height:120px;border-radius:8px;background:#f7f7f7;}
-.dot{width:30px;height:30px;border-radius:50%;margin-bottom:8px;}
-#msg{margin-top:12px;text-align:center;}
-#loginOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;z-index:9999;overflow-y:auto;padding:20px;box-sizing:border-box;}
-#loginOverlay h2{margin-bottom:20px;text-align:center;}
-#loginNames{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:900px;}
-.login-name{background:#007bff;padding:12px 20px;border-radius:8px;cursor:pointer;font-size:18px;flex:1 1 calc(20% - 10px);text-align:center;min-width:120px;}
-.login-name:hover{background:#0056b3;}
-#logoutBtn{display:none;margin-top:10px;padding:10px 16px;border:none;border-radius:6px;background:#ff6600;color:white;cursor:pointer;font-size:16px;}
-#logoutBtn:hover{background:#cc5200;}
+body {font-family: Arial,sans-serif; padding:20px; max-width:720px; margin:auto; background:#f5f5f5;}
+h2 {text-align:center;}
+.buttons {display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:20px;}
+.buttons button {flex:1 1 120px; padding:14px; font-size:18px; border:none; border-radius:8px; color:white; cursor:pointer;}
+.red {background:#d9534f;}
+.green {background:#5cb85c;}
+.overlay {position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; justify-content:center; align-items:center; flex-wrap:wrap; padding:20px; z-index:10;}
+.overlay button {flex:1 1 100px; margin:10px;}
+#logoutBtn {margin-top:20px; padding:10px 16px; background:#ccc; color:#000; border-radius:6px; cursor:pointer;}
 </style>
 </head>
 <body>
-<h2>Stoplicht - leerling</h2>
+<h2>Stoplicht Leerling</h2>
 
-<div id="loginOverlay">
-    <h2>Kies je naam</h2>
-    <div id="loginNames"></div>
-</div>
+<div id="loginOverlay" class="overlay"></div>
 
-<div class="buttons" role="group">
-    <button class="aanhetwerk" data-status="aanhetwerk">🟩 Aan het werk / Geen vragen</button>
-    <button class="vraag" data-status="vraag">🟥 Ik heb een vraag</button>
+<div class="buttons" role="group" aria-label="Stoplicht knoppen">
+    <button class="green" data-status="aanhetwerk">🟩 Aan het werk / Geen vragen</button>
+    <button class="red" data-status="vraag">🟥 Ik heb een vraag</button>
 </div>
 
 <button id="logoutBtn">Uitloggen</button>
-<p id="msg" style="color:green"></p>
-
-<h3>Huidige status klas</h3>
-<ul id="statusList" class="status-list"></ul>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -50,91 +36,61 @@ const firebaseConfig = {
   authDomain: "stoplichtblokje.firebaseapp.com",
   databaseURL: "https://stoplichtblokje-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "stoplichtblokje",
-  storageBucket: "stoplichtblokje.firebasedatabase.app",
+  storageBucket: "stoplichtblokje.firebasedestorage.app",
   messagingSenderId: "1019644227104",
   appId: "1:1019644227104:web:833b07ad778a8df5171645"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const statusList = document.getElementById('statusList');
-const loginOverlay = document.getElementById('loginOverlay');
-const loginNamesDiv = document.getElementById('loginNames');
-const logoutBtn = document.getElementById('logoutBtn');
-let currentStudentId = null;
-let currentStudentName = null;
 
-// Load overlay
+let currentUser=null;
+const overlay=document.getElementById('loginOverlay');
+const buttons=document.querySelectorAll('.buttons button');
+const logoutBtn=document.getElementById('logoutBtn');
+
 function loadStudents(){
-    loginOverlay.style.display='flex';
-    logoutBtn.style.display='none';
+    overlay.innerHTML='';
     db.ref('students').once('value').then(snap=>{
-        const data = snap.val()||{};
-        loginNamesDiv.innerHTML='';
-        Object.keys(data).forEach(k=>{
-            const div = document.createElement('div');
-            div.className='login-name';
-            div.textContent = data[k].name;
-            div.addEventListener('click',()=>{
-                currentStudentId = k;
-                currentStudentName = data[k].name;
-                loginOverlay.style.display='none';
-                logoutBtn.style.display='inline-block';
+        const data=snap.val()||{};
+        // Check start of day message
+        db.ref('class/startOfDayMessage').once('value').then(msgSnap=>{
+            const msgData = msgSnap.val();
+            if(msgData && msgData.message){
+                const p=document.createElement('p');
+                p.style.color='#fff';
+                p.style.fontSize='18px';
+                p.style.width='100%';
+                p.style.textAlign='center';
+                p.textContent=msgData.message;
+                overlay.appendChild(p);
+            }
+            Object.keys(data).forEach(k=>{
+                const btn=document.createElement('button');
+                btn.textContent=data[k].name;
+                btn.addEventListener('click',()=>{
+                    currentUser=k;
+                    overlay.style.display='none';
+                });
+                overlay.appendChild(btn);
             });
-            loginNamesDiv.appendChild(div);
+            overlay.style.display='flex';
         });
     });
 }
 
-// Update status
-function updateStatus(status){
-    if(!currentStudentId) return;
-    const updates = {status:status};
-    updates.vraagTijd = status==='vraag'?Date.now():null;
-    db.ref('students/'+currentStudentId).update({...updates,name:currentStudentName});
-    const msg = document.getElementById('msg');
-    msg.textContent='Status opgeslagen: '+status;
-    setTimeout(()=>{ msg.textContent=''; },2000);
-}
-
-// Buttons
-document.querySelectorAll('.buttons button').forEach(b=>{
-    b.addEventListener('click',()=>updateStatus(b.dataset.status));
-});
-
-// Render klasstatussen
-db.ref('students').on('value',snap=>{
-    const data = snap.val()||{};
-    const items = Object.keys(data).map(k=>{
-        return {id:k,name:data[k].name,status:data[k].status||'aanhetwerk',vraagTijd:data[k].vraagTijd||null};
-    });
-    items.sort((a,b)=>{
-        if(a.status==='vraag' && b.status!=='vraag') return -1;
-        if(a.status!=='vraag' && b.status==='vraag') return 1;
-        if(a.status==='vraag' && b.status==='vraag') return (a.vraagTijd||0)-(b.vraagTijd||0);
-        return 0;
-    });
-    statusList.innerHTML='';
-    items.forEach(it=>{
-        const li=document.createElement('li');
-        li.className='status-item';
-        const dot=document.createElement('div'); dot.className='dot';
-        dot.style.background = it.status==='aanhetwerk'? '#5cb85c':'#d9534f';
-        li.appendChild(dot);
-        const name=document.createElement('div'); name.textContent=it.name;
-        li.appendChild(name);
-        statusList.appendChild(li);
+buttons.forEach(b=>{
+    b.addEventListener('click', ()=>{
+        if(!currentUser) return;
+        const status=b.dataset.status;
+        db.ref('students/'+currentUser).update({status:status});
     });
 });
 
-// Logout
-logoutBtn.addEventListener('click',()=>{
-    currentStudentId = null;
-    currentStudentName = null;
-    loginOverlay.style.display='flex';
-    logoutBtn.style.display='none';
+logoutBtn.addEventListener('click', ()=>{
+    currentUser=null;
+    overlay.style.display='flex';
 });
 
-// Init
 loadStudents();
 </script>
 </body>
